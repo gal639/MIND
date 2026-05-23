@@ -1,0 +1,119 @@
+# =============================================================================
+# .gitignore for MIND / Einat paper R project
+#
+# Philosophy:
+#   - Track CODE (.R, .Rmd, .md, .py, configs)
+#   - Track DOCUMENTATION (README, handoffs, the HTML report if you want)
+#   - Do NOT track DATA (raw or derived) — DUA-protected, large, sensitive
+#   - Do NOT track OUTPUTS (results, plots, txt dumps) — regenerable by pipeline
+#   - Do NOT track R session state (.RData, .Rhistory) — contains in-memory data
+# =============================================================================
+
+# ---- R session state (CRITICAL: contains last-session data in memory) -------
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj.bak
+
+# ---- R package management ---------------------------------------------------
+renv/library/
+renv/local/
+renv/lock/
+renv/python/
+renv/staging/
+.Rprofile
+
+# ---- Data files (ALL of them, raw or derived) -------------------------------
+*.rds
+*.RDS
+*.rda
+*.Rdata
+*.RData
+*.feather
+*.parquet
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.xlsm
+*.sav
+*.dta
+*.sas7bdat
+
+# ---- Specific data folders (defense in depth, even if extensions miss) ------
+SPARK*/
+SSC*/
+ssc_*/
+ANCAN*/
+ancan*/
+SEM_output/data/
+SEM_output/data_with_iq/
+SEM_output/missing/
+SEM_output/plots/
+correlation_matrices/plots/
+correlation_matrices/*.rds
+plots180225/
+plots_new/
+plots_new_1/
+chars*/
+descriptives_output/
+mind_pres_*/
+pdf2png/
+
+# ---- Sex-split data files at root (from Fisher script) ----------------------
+*_Boys.rds
+*_Girls.rds
+MIND_Preschool*
+MIND_Schoolage*
+SSC_Preschool*
+SSC_Schoolage*
+
+# ---- Output / generated artifacts (regenerable by pipeline) -----------------
+*.png
+*.pdf
+*.jpg
+*.jpeg
+*.svg
+*.eps
+*.tiff
+*.html        # remove this line if you DO want to track HTML reports
+SEM_results.txt
+Fisher_rz_results.txt
+regression_*.txt
+regression_*.csv
+regression_*.xlsx
+section9_v2_output/
+
+# ---- Cache / temp / system --------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+*~
+*.swp
+.cache/
+
+# ---- OS / IDE clutter -------------------------------------------------------
+.vscode/
+.idea/
+*.code-workspace
+
+# ---- Secrets (just in case — never commit API keys, passwords, paths to DUA-protected mounts)
+.env
+.env.local
+*.key
+*.pem
+secrets.R
+credentials.R
+
+# ---- Allow specific things back in (whitelist exceptions) -------------------
+# If you want to share a SMALL example dataset for reproducibility, you can
+# un-ignore it explicitly:
+# !example_data/tiny_example.csv
+
+# ---- Allow this gitignore itself and README/docs ----------------------------
+!.gitignore
+!README.md
+!*.md
