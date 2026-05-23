@@ -15,7 +15,18 @@
 
 # ---- CONFIG ----------------------------------------------------------------
 
-BASE_DIR <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND"
+# BASE_DIR auto-detected from current working directory (set by .Rproj).
+# If running outside RStudio, ensure your CWD is the MIND project root.
+BASE_DIR <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+
+# Optional override — uncomment and edit if you need a different root:
+# BASE_DIR <- "D:/some/other/path/MIND"
+
+# Lab data root (outside the project — must be set per machine).
+# Used by Stage 3 IQ merge to find raw MIND xlsx + SSC csv.
+LAB_DATA_ROOT <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA"
+# On the new computer, edit LAB_DATA_ROOT to match its lab-OneDrive location.
+
 
 # Force re-run flags. Default FALSE = use cached outputs when present.
 FORCE_STAGE2_DATAPREP <- FALSE   # SEM_*.rds in SEM_output/data/

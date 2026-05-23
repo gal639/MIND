@@ -7,7 +7,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, tidytext)
 
 # 1. output setup ----------------------------------------------------------
-output_dir <- "~/Desktop/MIND/SEM_output"
+output_dir <- "SEM_output"
 plots_dir  <- file.path(output_dir, "plots")
 dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
 

@@ -15,7 +15,18 @@
 
 # ---- CONFIG ----------------------------------------------------------------
 
-BASE_DIR <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND"
+# BASE_DIR auto-detected from current working directory (set by .Rproj).
+# If running outside RStudio, ensure your CWD is the MIND project root.
+BASE_DIR <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+
+# Optional override — uncomment and edit if you need a different root:
+# BASE_DIR <- "D:/some/other/path/MIND"
+
+# Lab data root (outside the project — must be set per machine).
+# Used by Stage 3 IQ merge to find raw MIND xlsx + SSC csv.
+LAB_DATA_ROOT <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA"
+# On the new computer, edit LAB_DATA_ROOT to match its lab-OneDrive location.
+
 
 # Force re-run flags. Default FALSE = use cached outputs when present.
 FORCE_STAGE2_DATAPREP <- FALSE   # SEM_*.rds in SEM_output/data/
@@ -54,6 +65,7 @@ outputs_fresh <- function(outputs, inputs = character(0)) {
   min_out > max_in
 }
 
+
 run_or_skip <- function(label, script_path, outputs, inputs = character(0), force = FALSE) {
   banner(paste0("STAGE: ", label))
   cat("Script:  ", script_path, "\n", sep = "")
@@ -86,11 +98,13 @@ run_or_skip <- function(label, script_path, outputs, inputs = character(0), forc
 SEM_DATA_DIR    <- file.path(BASE_DIR, "SEM_output", "data")
 SEM_IQDATA_DIR  <- file.path(BASE_DIR, "SEM_output", "data_with_iq")
 SEM_OUT_DIR     <- file.path(BASE_DIR, "SEM_output")
+
 HLM_DIR         <- file.path(BASE_DIR, "sem_HLM_100426")
 MOD_OUT_DIR     <- file.path(HLM_DIR, "section9_v2_output")
 
 rds_basenames <- c("SEM_MIND_preschool.rds", "SEM_MIND_schoolage.rds",
                    "SEM_SSC_preschool.rds",  "SEM_SSC_schoolage.rds")
+
 
 # ---- STAGE 2 — Sanity check on data/ RDS files -----------------------------
 # These are produced by appending sem_export_*() to the Stage 1 filtering
@@ -206,8 +220,10 @@ if (!FORCE_STAGE4_MODER && !is.null(latest_run)) {
 # ---- SUMMARY ---------------------------------------------------------------
 
 banner("Pipeline complete.")
+
 cat("Outputs:\n")
 cat("  Stage 2 (SEM RDS):       ", SEM_DATA_DIR, "\n", sep = "")
+
 cat("  Stage 3 (with IQ):       ", SEM_IQDATA_DIR, "\n", sep = "")
 cat("  Stage 4a (SEM):          ", file.path(SEM_OUT_DIR, "SEM_results.txt"), "\n", sep = "")
 cat("  Stage 4b (Fisher):       ", file.path(SEM_OUT_DIR, "Fisher_rz_results.txt"), "\n", sep = "")

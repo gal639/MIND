@@ -10,7 +10,7 @@
 # - Originals untouched.
 # =============================================================================
 
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND/")
+# setwd() removed — project root set by .Rproj / run_pipeline.R
 
 suppressPackageStartupMessages({
   library(readxl)
@@ -19,10 +19,19 @@ suppressPackageStartupMessages({
 })
 
 # --- Paths -------------------------------------------------------------------
-RDS_DIR     <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND/SEM_output/data"
-OUT_DIR     <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND/SEM_output/data_with_iq"
-MIND_XLSX   <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA/MIND/MIND_dataset_2024-05-29.xlsx"
-SSC_CORE_DESC <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA/SSC/Summary - general/ssc_core_descriptive.csv"
+# Project-internal paths (relative to MIND/ project root)
+RDS_DIR <- "SEM_output/data"
+OUT_DIR <- "SEM_output/data_with_iq"
+
+# Lab data root — lives OUTSIDE the project, configurable per machine.
+# Default falls back to the typical Windows location; can be overridden by
+# setting LAB_DATA_ROOT in the calling environment (e.g., run_pipeline.R).
+if (!exists("LAB_DATA_ROOT")) {
+  LAB_DATA_ROOT <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA"
+}
+MIND_XLSX     <- file.path(LAB_DATA_ROOT, "MIND", "MIND_dataset_2024-05-29.xlsx")
+SSC_CORE_DESC <- file.path(LAB_DATA_ROOT, "SSC", "Summary - general", "ssc_core_descriptive.csv")
+
 
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
@@ -310,3 +319,4 @@ cat("    - 'ratio' = ratio IQ / DQ, NOT comparable to standard scores\n")
 cat("  Decide with Einat whether to filter ratio-scale kids before IQ analyses.\n")
 cat("\nSSC IQ comes from ssc_core_descriptive.csv (pre-harmonized by SSC team).\n")
 cat("MIND IQ uses age-matched visit (closest iq_age to RDS age per kid).\n")
+

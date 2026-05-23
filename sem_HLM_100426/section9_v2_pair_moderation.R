@@ -56,7 +56,7 @@
 # --- 0. CONFIG
 # =============================================================================
 
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND/sem_HLM_100426")
+# setwd() removed — project root set by .Rproj / run_pipeline.R
 
 # =============================================================================
 # IQ SWITCHBOARD
@@ -84,12 +84,12 @@ RUN_IQ_MODELS    <- TRUE
 IQ_RATIO_POLICY  <- "all"          # "all" | "deviation_only" | "ratio_only"
 
 data_src <- if (RUN_IQ_MODELS) {
-  file.path(dirname(getwd()), "SEM_output", "data_with_iq")
+  "SEM_output/data_with_iq"
 } else {
-  file.path(dirname(getwd()), "SEM_output", "data")
+  "SEM_output/data"
 }
 
-output_dir <- getwd()
+output_dir <- "sem_HLM_100426"
 
 # Run tag: policy + timestamp. Each run lands in its own folder so prior
 # results aren't overwritten. Format: section9_v2_output/<policy>_<YYYYMMDD_HHMM>/
