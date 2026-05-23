@@ -19,24 +19,22 @@ suppressPackageStartupMessages({
 })
 
 # --- Paths -------------------------------------------------------------------
-# Project-internal paths (relative to MIND/ project root)
+# Project-internal paths (relative to MIND/ project root).
 RDS_DIR <- "SEM_output/data"
 OUT_DIR <- "SEM_output/data_with_iq"
 
 # Lab data root — lives OUTSIDE the project, configurable per machine.
-# Default falls back to the typical Windows location; can be overridden by
-# setting LAB_DATA_ROOT in the calling environment (e.g., run_pipeline.R).
+# Falls back to the typical Windows location if not set by the caller.
 if (!exists("LAB_DATA_ROOT")) {
   LAB_DATA_ROOT <- "C:/Users/galor/OneDrive - University of Haifa/המרכז לאוטיזם/DATA"
 }
 MIND_XLSX     <- file.path(LAB_DATA_ROOT, "MIND", "MIND_dataset_2024-05-29.xlsx")
 SSC_CORE_DESC <- file.path(LAB_DATA_ROOT, "SSC", "Summary - general", "ssc_core_descriptive.csv")
 
-
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-# Helper: print banner
-banner <- function(msg) {
+# Helper: print iq_banner
+iq_banner <- function(msg) {
   cat("\n", strrep("=", 78), "\n", sep = "")
   cat(msg, "\n")
   cat(strrep("=", 78), "\n", sep = "")
@@ -102,7 +100,7 @@ summarize_fsiq <- function(d, label) {
 # Part 1 — Build MIND IQ lookup
 # =============================================================================
 
-banner("PART 1 — BUILD MIND IQ LOOKUP")
+iq_banner("PART 1 — BUILD MIND IQ LOOKUP")
 
 mind_raw <- suppressMessages(read_excel(MIND_XLSX, sheet = "Sheet1"))
 cat("MIND raw rows:", nrow(mind_raw), "\n")
@@ -140,7 +138,7 @@ print(mind_iq_all %>% count(IQ_instrument, name = "n"), row.names = FALSE)
 #   raw instrument files — matches SSC literature, handles edge cases properly.
 # =============================================================================
 
-banner("PART 2 — BUILD SSC IQ LOOKUP")
+iq_banner("PART 2 — BUILD SSC IQ LOOKUP")
 
 SSC_CORE <- SSC_CORE_DESC
 
@@ -188,7 +186,7 @@ print(ssc_iq %>% filter(!is.na(FSIQ)) %>% count(IQ_instrument, name = "n"),
 # Part 3 — Merge into each RDS file
 # =============================================================================
 
-banner("PART 3 — MERGE + SAVE")
+iq_banner("PART 3 — MERGE + SAVE")
 
 # Helper: pick closest MIND visit per id, given RDS age (in months)
 pick_closest_mind_visit <- function(rds_df, mind_lookup) {
@@ -285,7 +283,7 @@ merge_one("SEM_SSC_schoolage.rds",   ssc_iq,      "SSC_schoolage",  "SSC")
 # Part 4 — Verify by re-reading new files
 # =============================================================================
 
-banner("PART 4 — VERIFY (re-read new RDS)")
+iq_banner("PART 4 — VERIFY (re-read new RDS)")
 
 for (f in c("SEM_MIND_preschool.rds","SEM_MIND_schoolage.rds",
             "SEM_SSC_preschool.rds","SEM_SSC_schoolage.rds")) {
@@ -301,7 +299,7 @@ for (f in c("SEM_MIND_preschool.rds","SEM_MIND_schoolage.rds",
       sep = "")
 }
 
-banner("DONE")
+iq_banner("DONE")
 cat("New RDS files in: ", OUT_DIR, "\n", sep = "")
 cat("Downstream change needed:\n")
 cat("  data_src <- file.path(dirname(getwd()), 'SEM_output', 'data_with_iq')\n")
@@ -319,4 +317,3 @@ cat("    - 'ratio' = ratio IQ / DQ, NOT comparable to standard scores\n")
 cat("  Decide with Einat whether to filter ratio-scale kids before IQ analyses.\n")
 cat("\nSSC IQ comes from ssc_core_descriptive.csv (pre-harmonized by SSC team).\n")
 cat("MIND IQ uses age-matched visit (closest iq_age to RDS age per kid).\n")
-
