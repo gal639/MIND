@@ -93,3 +93,6 @@ See `run_pipeline.R` for full configuration.
 
 Code in this repository is shared for academic transparency. Please contact
 the authors before any reuse.
+
+Cloned to work laptop on 2026-05-24.
+
