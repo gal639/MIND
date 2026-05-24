@@ -21,8 +21,9 @@ BASE_DIR <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND"
 FORCE_STAGE2_DATAPREP <- FALSE   # SEM_*.rds in SEM_output/data/
 FORCE_STAGE3_IQ_MERGE <- FALSE   # SEM_*.rds in SEM_output/data_with_iq/
 FORCE_STAGE4_SEM      <- FALSE   # SEM_output/SEM_results.txt
-FORCE_STAGE4_FISHER   <- FALSE   # SEM_output/Fisher_rz_results.txt
+FORCE_STAGE4_FISHER   <- T   # SEM_output/Fisher_rz_results.txt
 FORCE_STAGE4_MODER    <- FALSE   # sem_HLM_100426/section9_v2_output/iq_<policy>_*
+RUN_STAGE4_FISHER_PARTIAL <- TRUE
 
 # Moderation script — which IQ run to execute.
 #   "all"            → mixes deviation + ratio IQ (keeps MIND_preschool)
@@ -135,7 +136,14 @@ run_or_skip(
 # Script: correlation_matrices/sex_plots_cohorts_einat_040326.R
 # Reads 8 sex-split RDS files from BASE_DIR (NOT the IQ-augmented data).
 # Writes Fisher_rz_results.txt to SEM_output/.
+# at the top with the other flags
 
+# later, alongside RUN_STAGE4_FISHER:
+if (RUN_STAGE4_FISHER_PARTIAL) {
+  run_script("4b' Fisher r-to-z (partial)",
+             file.path("correlation_matrices",
+                       "sex_plots_cohorts_einat_040326_partial.R"))
+}
 fisher_inputs <- file.path(BASE_DIR, c(
   "MIND_Preschool_Boys.rds",  "MIND_Preschool_Girls.rds",
   "MIND_Schoolage_Boys.rds",  "MIND_Schoolage_Girls.rds",
@@ -218,3 +226,4 @@ if (!is.null(latest)) {
   cat("  Stage 4c (Moderation):   ", latest, "\n", sep = "")
 }
 cat("\nForce a re-run by setting FORCE_<STAGE> <- TRUE at top.\n")
+
