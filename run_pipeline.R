@@ -31,6 +31,25 @@ RUN_STAGE4_FISHER_PARTIAL <- TRUE
 #   "ratio_only"     → ratio IQ only (sensitivity)
 IQ_RATIO_POLICY <- "all"
 
+# ---- Stage 5: sex-balanced resampling (Emilio's recommendation) ------------
+# Holds all girls fixed, draws a matched boy subsample, runs all three lenses,
+# summarises the replicate distribution by its MEDIAN. Headline correction is
+# Benjamini-Hochberg FDR; the effect-size empirical CI is the primary call.
+# Saved BESIDE the existing per-lens outputs (does not replace them).
+RUN_STAGE5_RESAMPLE   <- TRUE
+FORCE_STAGE5_RESAMPLE <- FALSE
+RESAMPLE_N_REPS       <- 1000L  # final run. Use a small value (e.g. 20) to smoke-test.
+RESAMPLE_SEED         <- 1L
+
+# SURFACED, NOT DECIDED — author + Einat must confirm:
+#   IQ metric for the regression. MIND Preschool ratio-vs-deviation IQ is
+#   unresolved (374/375 MSEL ratio). No transform is hardcoded; this just names
+#   the column fed to M3/M4. The IQ ratio-policy row filter reuses IQ_RATIO_POLICY.
+RESAMPLE_IQ_VAR       <- "FSIQ"
+#   Correction scope/family for BH-FDR over the resampled terms:
+#     "within_subsample" (current canonical scope) | "within_domain" | "whole_table"
+RESAMPLE_FDR_SCOPE    <- "within_subsample"
+
 # Stage 1 (source data filtering) is never auto-run. It produces transient
 # in-memory data frames and the SEM-export snippets must be appended manually.
 # If you need to redo Stage 1, do it interactively in RStudio.
@@ -213,6 +232,45 @@ if (!FORCE_STAGE4_MODER && !is.null(latest_run)) {
       " sec\n", sep = "")
 }
 
+# ---- STAGE 5 — Sex-balanced resampling (BH-FDR + effect sizes) -------------
+# Runs all three lenses (Fisher r-to-z, SEM covariance LRT, regression M2/M4)
+# over sex-balanced resamples and writes a single tidy table with, per term:
+#   estimate_median/_lo/_hi, es_median/_lo/_hi (the PRIMARY inferential object),
+#   p_median, prop_sig, and the BH-FDR p_fdr/sig_fdr at the chosen scope.
+# Output lands in SEM_output/, beside SEM_results.txt and Fisher_rz_results.txt.
+
+resamp_out_csv <- file.path(SEM_OUT_DIR, "resampled_lens_results.csv")
+resamp_out_rds <- file.path(SEM_OUT_DIR, "resampled_lens_results.rds")
+resamp_inputs  <- file.path(SEM_IQDATA_DIR, rds_basenames)
+
+if (RUN_STAGE5_RESAMPLE) {
+  banner(paste0("STAGE 5 — Sex-balanced resampling [n_reps = ", RESAMPLE_N_REPS,
+                ", FDR scope = ", RESAMPLE_FDR_SCOPE, "]"))
+  if (!FORCE_STAGE5_RESAMPLE && outputs_fresh(resamp_out_csv, resamp_inputs)) {
+    cat("[CACHED] ", basename(resamp_out_csv), " present and newer than inputs.\n", sep = "")
+    cat("         (Set FORCE_STAGE5_RESAMPLE <- TRUE to re-run.)\n")
+  } else {
+    cat("[RUNNING] sourcing resampling engine + lens adapters...\n\n")
+    t0 <- Sys.time()
+    old_wd <- getwd(); setwd(BASE_DIR)
+    source(file.path(BASE_DIR, "resample_balance.R"), local = FALSE)
+    source(file.path(BASE_DIR, "resample_lenses.R"),  local = FALSE)
+    resampled <- run_resampled_lenses(
+      data_src  = SEM_IQDATA_DIR,
+      n_reps    = RESAMPLE_N_REPS,
+      seed      = RESAMPLE_SEED,
+      iq_policy = IQ_RATIO_POLICY,   # reuse the same ratio-policy as moderation
+      iq_var    = RESAMPLE_IQ_VAR,
+      fdr_scope = RESAMPLE_FDR_SCOPE
+    )
+    write.csv(resampled, resamp_out_csv, row.names = FALSE)
+    saveRDS(resampled, resamp_out_rds)
+    setwd(old_wd)
+    cat("\n  >> ", nrow(resampled), " terms written to ", basename(resamp_out_csv),
+        " in ", round(as.numeric(Sys.time() - t0, units = "secs"), 1), " sec\n", sep = "")
+  }
+}
+
 # ---- SUMMARY ---------------------------------------------------------------
 
 banner("Pipeline complete.")
@@ -224,6 +282,9 @@ cat("  Stage 4b (Fisher):       ", file.path(SEM_OUT_DIR, "Fisher_rz_results.txt
 latest <- find_latest_moder_run(IQ_RATIO_POLICY)
 if (!is.null(latest)) {
   cat("  Stage 4c (Moderation):   ", latest, "\n", sep = "")
+}
+if (RUN_STAGE5_RESAMPLE) {
+  cat("  Stage 5 (Resampled):     ", resamp_out_csv, "\n", sep = "")
 }
 cat("\nForce a re-run by setting FORCE_<STAGE> <- TRUE at top.\n")
 

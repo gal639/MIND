@@ -78,9 +78,7 @@ results <- imap_dfr(cohorts, \(fg, lab) {
              pair   = paste(v1, v2, sep = " \u2194 "),
              r_boys = r1, r_girls = r2)
   })
-}) |>
-  mutate(p_bonf = p.adjust(p, "bonferroni"),
-         sig    = p_bonf < .05)
+})
 
 # 5. assign domain (within-domain pairs only) -----------------------------
 assign_domain <- function(v1, v2, map = domain_map) {
@@ -91,6 +89,29 @@ assign_domain <- function(v1, v2, map = domain_map) {
 
 results <- results |>
   mutate(domain = assign_domain(v1, v2))
+
+# 5b. multiplicity correction --------------------------------------------
+# HEADLINE is Benjamini-Hochberg FDR (replaces Bonferroni). Bonferroni kept
+# beside it for reference only — do not report it as the primary call.
+#
+# SURFACED, NOT DECIDED — correction scope/family (author + Einat to confirm):
+#   "within_subsample" : correct across all pairs within a cohort  [DEFAULT]
+#   "within_domain"    : correct across pairs within a cohort x domain
+#   "whole_table"      : one family across every pair (old Bonferroni scope)
+# Inherits run_pipeline.R's RESAMPLE_FDR_SCOPE if set, else within_subsample.
+FISHER_CORRECTION_SCOPE <- if (exists("RESAMPLE_FDR_SCOPE")) RESAMPLE_FDR_SCOPE else "within_subsample"
+
+fisher_grp <- switch(FISHER_CORRECTION_SCOPE,
+  within_subsample = vars(cohort),
+  within_domain    = vars(cohort, domain),
+  whole_table      = vars())
+
+results <- results |>
+  group_by(!!!fisher_grp) |>
+  mutate(p_fdr  = p.adjust(p, "BH"),          # HEADLINE
+         p_bonf = p.adjust(p, "bonferroni"),  # reference only
+         sig    = p_fdr < .05) |>
+  ungroup()
 
 res_sa     <- results |> filter(domain == "SA")
 res_rrb    <- results |> filter(domain == "RRB")
@@ -158,6 +179,8 @@ save_plot(make_bars(res_totals, "Totals"),                       "deltaR_TOTAL")
 # 9. save text results -----------------------------------------------------
 sink(file.path(output_dir, "Fisher_rz_results.txt"))
 cat("Fisher r-to-z — All Within-Domain Pair Comparisons\n")
+cat("Headline correction: Benjamini-Hochberg FDR (p_fdr); Bonferroni kept for reference.\n")
+cat("Correction scope:", FISHER_CORRECTION_SCOPE, "\n")
 cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M"), "\n")
 cat(strrep("=", 70), "\n\n")
 
@@ -166,7 +189,7 @@ for (dom in c("SA", "RRB", "Totals")) {
   cat("Domain:", dom, "\n")
   cat(strrep("-", 50), "\n")
   sub <- results |> filter(domain == dom) |>
-    select(cohort, pair, r_boys, r_girls, diff, p, p_bonf, sig) |>
+    select(cohort, pair, r_boys, r_girls, diff, p, p_fdr, p_bonf, sig) |>
     arrange(cohort, desc(abs(diff)))
   print(as.data.frame(sub), row.names = FALSE, right = FALSE)
   cat("\n")

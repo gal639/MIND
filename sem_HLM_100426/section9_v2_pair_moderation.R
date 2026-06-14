@@ -83,6 +83,14 @@
 RUN_IQ_MODELS    <- TRUE
 IQ_RATIO_POLICY  <- "all"          # "all" | "deviation_only" | "ratio_only"
 
+# Multiplicity correction. HEADLINE is Benjamini-Hochberg FDR (was Bonferroni).
+# Bonferroni columns are kept beside it for reference only.
+# SURFACED, NOT DECIDED — correction scope/family (author + Einat to confirm):
+#   "within_subsample" : across the 9-12 pairs of each subsample  [DEFAULT, canonical]
+#   "within_domain"    : across pairs within each (subsample x domain)
+# Inherits run_pipeline.R's RESAMPLE_FDR_SCOPE if set.
+CORRECTION_SCOPE <- if (exists("RESAMPLE_FDR_SCOPE")) RESAMPLE_FDR_SCOPE else "within_subsample"
+
 data_src <- if (RUN_IQ_MODELS) {
   "SEM_output/data_with_iq"
 } else {
@@ -507,13 +515,19 @@ results <- bind_rows(
 
 
 # =============================================================================
-# --- 7. BONFERRONI CORRECTION (within Subsample × Analysis)
+# --- 7. MULTIPLICITY CORRECTION (headline = BH-FDR; Bonferroni kept beside)
+# Scope set by CORRECTION_SCOPE (within_subsample [default] | within_domain).
 # =============================================================================
 
+corr_grp <- switch(CORRECTION_SCOPE,
+  within_subsample = vars(Subsample),
+  within_domain    = vars(Subsample, Domain),
+  stop("Unknown CORRECTION_SCOPE: ", CORRECTION_SCOPE))
+
 results <- results %>%
-  group_by(Subsample) %>%
+  group_by(!!!corr_grp) %>%
   mutate(
-    # Bonferroni — strict FWER control
+    # Bonferroni — strict FWER control (REFERENCE ONLY; no longer headline)
     p_bonf_M2 = p.adjust(p_int_M2, method = "bonferroni"),
     p_bonf_M3 = if (RUN_IQ_MODELS) p.adjust(p_int_M3,    method = "bonferroni") else NA_real_,
     p_bonf_M4 = if (RUN_IQ_MODELS) p.adjust(p_intSex_M4, method = "bonferroni") else NA_real_,
@@ -540,7 +554,8 @@ cat("PAIR-LEVEL MODERATION ANALYSIS — Section 9 v2\n")
 cat("Question: Do informant tools track ADOS, and does Sex/IQ moderate that tracking?\n")
 cat("Female=1, Male=0  |  continuous predictors z-scored within subsample\n")
 cat("LRT: chi-square diff (lavTestLRT) on nested models with 0*-constraint\n")
-cat("Multiplicity: Bonferroni AND Benjamini-Hochberg FDR, within Subsample × Analysis\n")
+cat(sprintf("Multiplicity: HEADLINE = Benjamini-Hochberg FDR; Bonferroni kept for reference. Scope: %s\n",
+            CORRECTION_SCOPE))
 cat(sprintf("RUN_IQ_MODELS: %s   |   IQ_RATIO_POLICY: %s   |   data_src: %s\n",
             RUN_IQ_MODELS, IQ_RATIO_POLICY, basename(data_src)))
 cat(sprintf("Generated: %s\n", format(Sys.time(), "%Y-%m-%d %H:%M")))
@@ -623,14 +638,14 @@ make_forest <- function(res, b_col, se_col, ci_lo_col, ci_hi_col,
     geom_text(aes(label = sig_lab, x = ci_hi), hjust = -0.3,
               size = 3.4, fontface = "bold", color = "#E75480") +
     scale_color_manual(values = c(`TRUE` = "#E75480", `FALSE` = "gray60"),
-                       labels = c(`TRUE` = "sig (Bonf.)", `FALSE` = "n.s."),
+                       labels = c(`TRUE` = "sig (FDR)", `FALSE` = "n.s."),
                        name = NULL) +
     scale_shape_manual(values = c(`TRUE` = 16, `FALSE` = 1),
-                       labels = c(`TRUE` = "sig (Bonf.)", `FALSE` = "n.s."),
+                       labels = c(`TRUE` = "sig (FDR)", `FALSE` = "n.s."),
                        name = NULL) +
     facet_wrap(~ Subsample, scales = "free_x", ncol = 2) +
     labs(title = title,
-         subtitle = "Filled/pink = Bonferroni sig within subsample | Bars = 95% CI (uncorrected)",
+         subtitle = "Filled/pink = BH-FDR significant within correction scope | Bars = 95% CI (uncorrected)",
          x = subtitle_xlab, y = NULL) +
     theme_minimal(base_size = 11) +
     theme(plot.title       = element_text(face = "bold", size = 13),
@@ -643,7 +658,7 @@ make_forest <- function(res, b_col, se_col, ci_lo_col, ci_hi_col,
 
 p_sex <- make_forest(results,
                      "b_int_M2", "se_int_M2", "ci_lo_M2", "ci_hi_M2",
-                     "p_int_M2", "p_bonf_M2", "sig_M2",
+                     "p_int_M2", "p_fdr_M2", "sig_fdr_M2",
                      "Sex Moderation of ADOS-Informant Coupling (M2: Pred × Sex)",
                      "β (Pred × Sex)  |  >0 = stronger coupling for Female")
 
@@ -656,7 +671,7 @@ if (!is.null(p_sex)) {
 if (RUN_IQ_MODELS) {
   p_iq <- make_forest(results,
                       "b_int_M3", "se_int_M3", "ci_lo_M3", "ci_hi_M3",
-                      "p_int_M3", "p_bonf_M3", "sig_M3",
+                      "p_int_M3", "p_fdr_M3", "sig_fdr_M3",
                       "IQ Moderation of ADOS-Informant Coupling (M3: Pred × IQ)",
                       "β (Pred × IQ)  |  >0 = stronger coupling at higher IQ")
   if (!is.null(p_iq)) {
@@ -667,7 +682,7 @@ if (RUN_IQ_MODELS) {
   
   p_joint <- make_forest(results,
                          "b_intSex_M4", "se_intSex_M4", "ci_lo_intSex_M4", "ci_hi_intSex_M4",
-                         "p_intSex_M4", "p_bonf_M4", "sig_M4",
+                         "p_intSex_M4", "p_fdr_M4", "sig_fdr_M4",
                          "Sex Moderation Surviving IQ Control (M4: Pred × Sex | IQ)",
                          "β (Pred × Sex)  |  joint model with Pred × IQ")
   if (!is.null(p_joint)) {
