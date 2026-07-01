@@ -120,6 +120,14 @@ H<-c('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="vie
 '.caveats ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-soft)}.caveats li{margin-bottom:6px}.caveats b{color:var(--ink)}',
 '.note{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink-faint);margin:4px 0 0}',
 'footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink-faint);line-height:1.7}',
+'.esgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0 20px}@media(max-width:820px){.esgrid{grid-template-columns:1fr}}',
+'.escard{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--accent);padding:16px 18px;border-radius:3px}',
+'.escard h4{font-family:Fraunces,serif;font-weight:500;font-size:15px;margin:0 0 8px;color:var(--ink)}.escard h4 span{color:var(--ink-faint);font-size:12px;font-style:italic;font-weight:400}',
+'.escard .cmp{margin:0 0 10px;font-size:12.5px;color:var(--ink)}',
+'.escard .formula{font-family:"JetBrains Mono",monospace;font-size:11px;background:var(--bg-card-soft);border:1px solid var(--rule-soft);padding:8px 10px;border-radius:3px;margin:0 0 10px;color:var(--accent);line-height:1.5}',
+'.escard .why{font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5}',
+'.escard .scale{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink-soft);border-top:1px dashed var(--rule);padding-top:8px;margin-bottom:8px}',
+'.escard .yours{font-size:11.5px;color:var(--ink);background:var(--green);border-left:3px solid var(--pos);padding:8px 10px;border-radius:2px;line-height:1.5}',
 '</style></head><body><div class="page">')
 H<-c(H,'<header class="masthead"><div class="pubmark">Analysis update &middot; Sex differences in autism tool agreement</div>',
  '<div class="meta">MIND + SSC &middot; N = 3,236<br>01 Jul 2026 &middot; post-review revision</div></header>')
@@ -183,6 +191,23 @@ for(i in seq_len(nrow(rss))){r<-rss[i,]
  H<-c(H,row(c(lbl,r$terms,gh,r$fdr)))}
 H<-c(H,'</table>')
 H<-c(H,sprintf('<p class="note">Girls-higher direction survives balancing (Fisher %d%% / regression %d%%). Covariance sex difference survives in %d of 12 cells; MIND-preschool is the fragile one.</p>',ghF,ghR,semrs_sig))
+
+## Section 05 — effect sizes explained (for talking through with Einat)
+er<-fis[which.min(fis$p),]
+dcfi_big<-dcfi("MIND_school","TOTAL"); dcfi_neg<-dcfi("MIND_preschool","RRB")
+f2soc<-sexsig$f2_M4[sexsig$Domain=="SOCIAL"][1]; f2tot<-sexsig$f2_M4[sexsig$Domain=="TOTAL"][1]
+H<-c(H,'<h2><span class="num">05</span> Reading the effect sizes</h2>')
+H<-c(H,'<p>Each lens compares a different quantity, so each needs its own effect size &mdash; but all three are <b>free of sample size</b>: they measure <i>how big</i> the sex difference is, not just whether it is statistically detectable (Emilio&rsquo;s point). Small at any single pair, but a consistent girls-higher direction throughout.</p>')
+H<-c(H,'<div class="esgrid">')
+H<-c(H,sprintf('<div class="escard"><h4>Fisher &middot; Cohen&rsquo;s q <span>&amp; &Delta;r</span></h4><p class="cmp">Compares <b>two correlations</b> (girls&rsquo; r vs boys&rsquo; r for one tool pair).</p><div class="formula">q = arctanh(r<sub>girls</sub>) &minus; arctanh(r<sub>boys</sub>)</div><p class="why">The Fisher z-transform stretches the tails, so a given q means the same difference anywhere on the r scale; and it drops the &divide;&radic;N term of the z-<i>test</i>, so it is N-free. &Delta;r = r<sub>girls</sub>&minus;r<sub>boys</sub> is the intuitive raw gap.</p><div class="scale">|q|: <b>0.1</b> small &middot; <b>0.3</b> medium &middot; <b>0.5</b> large</div><div class="yours">Strongest pair &mdash; SSC-preschool RRB (ADI&harr;RBSR): boys r=%.2f, girls r=%.2f &rarr; &Delta;r=%+.2f, <b>q=%+.2f (large)</b>.</div></div>',er$r_boys,er$r_girls,er$dgb,er$q))
+H<-c(H,sprintf('<div class="escard"><h4>SEM &middot; &Delta;CFI</h4><p class="cmp">Compares <b>two whole covariance matrices</b> (boys&rsquo; vs girls&rsquo;) by model fit.</p><div class="formula">&Delta;CFI = CFI<sub>free</sub> &minus; CFI<sub>constrained</sub></div><p class="why">Fit lost when the sexes are forced to share one covariance matrix. Unlike the LRT &chi;&sup2; (which balloons with N &mdash; at SSC-school N&asymp;2,347 every cell is &ldquo;significant&rdquo;), &Delta;CFI is ~N-free. The free model is saturated (CFI=1), so &Delta;CFI = 1&minus;CFI<sub>constrained</sub>.</p><div class="scale">meaningful non-invariance if <b>&Delta;CFI &gt; .01</b> (Cheung &amp; Rensvold)</div><div class="yours">MIND-school TOTAL &Delta;CFI&asymp;%.2f (very large) vs MIND-preschool RRB&asymp;%.3f (&lt;.01, negligible &mdash; why that cell reads &ldquo;not different&rdquo;). Magnitude only; direction comes from the other two lenses.</div></div>',dcfi_big,dcfi_neg))
+H<-c(H,sprintf('<div class="escard"><h4>Regression &middot; Cohen&rsquo;s f&sup2; <span>&amp; &Delta;R&sup2;</span></h4><p class="cmp">How much ADOS variance the <b>Sex&times;Tool</b> term uniquely adds.</p><div class="formula">&Delta;R&sup2; = R&sup2;<sub>full</sub> &minus; R&sup2;<sub>reduced</sub><br>f&sup2; = &Delta;R&sup2; &divide; (1 &minus; R&sup2;<sub>full</sub>)</div><p class="why">Reduced = same model with the interaction fixed to 0 (already fit for the LRT). f&sup2; rescales the incremental R&sup2; against the still-unexplained variance &mdash; the standard single-term effect size.</p><div class="scale">f&sup2;: <b>0.02</b> small &middot; <b>0.15</b> medium &middot; <b>0.35</b> large</div><div class="yours">Most pairs &asymp;0 (small per pair; the signal is the direction). Surviving after IQ (M4): MIND-school SOCIAL <b>f&sup2;=%.3f</b>, TOTAL <b>f&sup2;=%.3f</b>. A few M2 came out slightly negative under FIML &mdash; read as &asymp;0.</div></div>',f2soc,f2tot))
+H<-c(H,'</div>')
+H<-c(H,'<table><tr><th>Lens</th><th>Compares</th><th>Effect size</th><th>Formula</th><th>small / med / large</th><th>Direction?</th></tr>',
+ '<tr><td>Fisher</td><td>two correlations</td><td>Cohen&rsquo;s q (+ &Delta;r)</td><td>arctanh(r_g) &minus; arctanh(r_b)</td><td>0.1 / 0.3 / 0.5</td><td>yes (+ = girls)</td></tr>',
+ '<tr><td>SEM</td><td>two covariance matrices</td><td>&Delta;CFI</td><td>CFI_free &minus; CFI_constrained</td><td>meaningful &gt; .01</td><td>no (magnitude)</td></tr>',
+ '<tr><td>Regression</td><td>variance from one term</td><td>f&sup2; (+ &Delta;R&sup2;)</td><td>&Delta;R&sup2; &divide; (1 &minus; R&sup2;_full)</td><td>0.02 / 0.15 / 0.35</td><td>via &beta; sign</td></tr></table>')
+H<-c(H,'<p class="note">Common thread: all three are sample-size-free magnitudes, so they say <i>how much</i> agreement differs by sex &mdash; the effect-size story (girls-higher, large in a few cells, small in most) carries more than the p-values, which at these Ns are mostly about power.</p>')
 
 ## Story
 H<-c(H,'<div class="story"><span class="k">The pattern, across all three lenses</span>',
