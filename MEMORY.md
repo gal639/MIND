@@ -139,6 +139,8 @@ non-NA effect size at every lens, girls-higher direction holds):
 | `resample_lenses.R` | Lens adapters + data loader + draw-once driver + scope-aware FDR |
 | `make_report.R` | Generates `analysis_report_2026-07-01_v2.html` from the pipeline outputs |
 | `sex_means_profile.R` | Stage 6: between-sex mean t-tests (Cohen's d) + z-scored profile plots |
+| `make_profile_by_informant.R` | Symptom profile grouped BY INSTRUMENT (Einat) + SD-ratio variance panel + descriptives table |
+| `make_reconciliation_fig.R` | Two-lens figure: LEVEL gap (Cohen's d) vs RANK agreement (Cohen's q) |
 | `SEM_output/SEM_cov_comparison.R` | Canonical SEM covariance LRT (FIML) — model spec is the source of truth, mirrored in resample_lenses.R |
 | `correlation_matrices/sex_plots_cohorts_einat_040326.R` | Canonical Fisher r-to-z (BH-FDR headline) |
 | `sem_HLM_100426/section9_v2_pair_moderation.R` | Canonical regression M1–M4 (BH-FDR headline) |
