@@ -54,10 +54,21 @@ p_heat <- ggplot(hd, aes(slice, measure, fill = d)) +
         panel.grid = element_blank(), strip.text.y = element_text(face = "bold", angle = 0),
         plot.title = element_text(face = "bold"))
 
-# ---- write multi-page PDF ---------------------------------------------------
-out <- "Means_Profile_Report_2026-07-01.pdf"
-pdf(out, width = 11, height = 8.5)
-print(p_profiles)
-print(p_heat)
-dev.off()
-cat("WROTE", out, "\n")
+# ---- write outputs ----------------------------------------------------------
+# PNGs FIRST — they need no font embedding to display, so they always work even
+# if a viewer is misbehaving. Written via ragg (crisp, no base-font issues).
+ggsave("Means_Profile_1_profiles.png", p_profiles, width = 11, height = 8.5, dpi = 150, device = ragg::agg_png)
+ggsave("Means_Profile_2_cohensD.png",  p_heat,     width = 11, height = 8.5, dpi = 150, device = ragg::agg_png)
+cat("WROTE Means_Profile_1_profiles.png + Means_Profile_2_cohensD.png\n")
+
+# cairo_pdf embeds fonts (base pdf() only references them, which crashes some
+# Windows viewers with "unknown software exception"). Wrapped so a locked/open
+# output file can't halt the run — PNGs above are the guaranteed deliverable.
+out <- "Means_Profile_Report.pdf"
+ok <- tryCatch({
+  cairo_pdf(out, width = 11, height = 8.5, onefile = TRUE)
+  print(p_profiles); print(p_heat); dev.off(); TRUE
+}, error = function(e) { try(dev.off(), silent = TRUE)
+  message("PDF write failed (", conditionMessage(e),
+          ") — likely the old PDF is open/locked. Close it and rerun; PNGs are ready."); FALSE })
+if (ok) cat("WROTE", out, "\n")

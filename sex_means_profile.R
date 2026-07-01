@@ -189,7 +189,9 @@ save_profiles <- function(pdat, path) {
     theme_bw(base_size = 10) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
           legend.position = "top", strip.text = element_text(face = "bold"))
-  ggsave(path, p, width = 12, height = 12, dpi = 200)
+  # cairo_pdf embeds fonts so Windows PDF viewers don't crash on referenced fonts.
+  dev <- if (isTRUE(capabilities("cairo"))) cairo_pdf else NULL
+  ggsave(path, p, width = 12, height = 12, device = dev)
   message("  >> saved ", path)
 }
 
