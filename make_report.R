@@ -139,6 +139,7 @@ H<-c(H,'<div class="fixbox"><h3>What changed since the last version</h3><ul>')
 H<-c(H,sprintf('<li><b>Fisher FDR family corrected.</b> BH-FDR is now applied only across the <b>relevant %d within-domain pairs</b> (per cohort), not the full variable combinatorics that had silently included cross-domain pairs we never report. Under the correct family, <b>SSC-preschool RRB (ADI ↔ RBSR) is FDR-significant</b> (p=.003 → p_fdr=.032) — the pair that had washed out before.</li>',n_tot))
 H<-c(H,'<li><b>Resampling made a single draw.</b> The sex-balanced resampling now <b>draws one matched boy subsample per replicate and runs all three lenses on that same sample</b> (draw-once-then-test), instead of each test drawing its own boys. Numbers are unchanged (draws were already seed-aligned); the design is now explicit and robust — exactly the &ldquo;resample before any test&rdquo; structure.</li>')
 H<-c(H,'<li><b>Effect sizes at every lens</b> (Emilio’s recommendation): Fisher → Cohen’s q &amp; Δr; covariance → ΔCFI; regression → Cohen’s f² &amp; ΔR² — reported alongside significance, and free of it.</li>')
+H<-c(H,'<li><b>New: between-sex mean profiles</b> (Einat’s request) — per-measure boys-vs-girls t-tests (Cohen’s d) + z-scored profile plots at three levels, on both the resample and the raw sample; see §6.</li>')
 H<-c(H,'</ul></div>')
 
 ## Section 1 covariance
@@ -208,6 +209,26 @@ H<-c(H,'<table><tr><th>Lens</th><th>Compares</th><th>Effect size</th><th>Formula
  '<tr><td>SEM</td><td>two covariance matrices</td><td>&Delta;CFI</td><td>CFI_free &minus; CFI_constrained</td><td>meaningful &gt; .01</td><td>no (magnitude)</td></tr>',
  '<tr><td>Regression</td><td>variance from one term</td><td>f&sup2; (+ &Delta;R&sup2;)</td><td>&Delta;R&sup2; &divide; (1 &minus; R&sup2;_full)</td><td>0.02 / 0.15 / 0.35</td><td>via &beta; sign</td></tr></table>')
 H<-c(H,'<p class="note">Common thread: all three are sample-size-free magnitudes, so they say <i>how much</i> agreement differs by sex &mdash; the effect-size story (girls-higher, large in a few cells, small in most) carries more than the p-values, which at these Ns are mostly about power.</p>')
+
+## Section 06 — between-sex mean profiles (Einat's request)
+sm <- tryCatch(readRDS("SEM_output/sex_means.rds"), error=function(e) NULL)
+if (!is.null(sm)) {
+ smr <- sm$resampled
+ smd <- function(sl,meas){ r<-smr[smr$slice==sl & smr$measure==meas,]; if(nrow(r)) r$es_median[1] else NA_real_ }
+ ados_f<-smd("1. Full","ADOS_Severity"); srsp_f<-smd("1. Full","SRS_Total_Parent"); srst_f<-smd("1. Full","SRS_Total_Teacher")
+ n_sig_m<-sum(smr$sig_fdr,na.rm=TRUE)
+ top<-smr[order(-abs(smr$es_median)),,drop=FALSE][1:min(8,nrow(smr)),]
+ H<-c(H,'<h2><span class="num">06</span> Between-sex mean profiles (group level)</h2>')
+ H<-c(H,'<p>Einat’s complement to the agreement lenses: instead of how measures <i>correlate within a child</i>, compare the boys’ vs girls’ <b>group mean</b> on each tool (t-test, Cohen’s d; uncorrected primary, FDR beside) and plot the z-scored profile. Her hypothesis: girls’ measures agree more within-child, yet the girls group is more heterogeneous, so the mean profile shows a bigger tool-to-tool gap &mdash; reconciling this sample with the literature.</p>')
+ H<-c(H,sprintf('<div class="lead">The profile signature is clear: on the clinician measure girls ≈ boys (<b>ADOS d=%+.2f</b>), but informants rate girls markedly higher (<b>SRS-parent d=%+.2f</b>, <b>SRS-teacher d=%+.2f</b>). That is a group-level <b>ADOS–SRS gap that is larger for girls</b> — the masking pattern. %d of the measure&times;slice tests survive BH-FDR.</div>',ados_f,srsp_f,srst_f,n_sig_m))
+ H<-c(H,'<table><tr><th>Slice</th><th>Measure</th><th>Cohen’s d (g&minus;b)</th><th>95% CI</th><th>p_fdr</th></tr>')
+ for(i in seq_len(nrow(top))){r<-top[i,];sg<-isTRUE(r$sig_fdr)
+  H<-c(H,row(c(esc(sub(".*\\. ","",r$slice)),esc(r$measure),
+    sprintf('<span class="%s">%+.2f</span>',ifelse(r$es_median>0,'b-pos','b-neg'),r$es_median),
+    sprintf('[%+.2f, %+.2f]',r$es_lo,r$es_hi),fpf(r$p_fdr)), if(sg)'sig' else ''))}
+ H<-c(H,'</table>')
+ H<-c(H,'<p class="note">Resampled median across replicates; +d = girls higher. Full profile plots (all 7 slices, 3 levels) in <code>SEM_output/sex_means_profiles.pdf</code>; raw-sample sensitivity in <code>sex_means_raw.csv</code>. Uncorrected alpha is primary (Einat); teacher SRS only where available (SSC).</p>')
+}
 
 ## Story
 H<-c(H,'<div class="story"><span class="k">The pattern, across all three lenses</span>',

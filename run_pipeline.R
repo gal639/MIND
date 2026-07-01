@@ -50,6 +50,12 @@ RESAMPLE_IQ_VAR       <- "FSIQ"
 #     "within_subsample" (current canonical scope) | "within_domain" | "whole_table"
 RESAMPLE_FDR_SCOPE    <- "within_subsample"
 
+# ---- Stage 6: between-sex MEAN-level analysis (Einat's profile request) -----
+# Per-measure boys-vs-girls t-tests (Cohen's d + p) at 3 levels, on BOTH the
+# sex-balanced resample and the raw sample, + z-scored profile plots.
+RUN_STAGE6_MEANS   <- TRUE
+FORCE_STAGE6_MEANS <- FALSE
+
 # Stage 1 (source data filtering) is never auto-run. It produces transient
 # in-memory data frames and the SEM-export snippets must be appended manually.
 # If you need to redo Stage 1, do it interactively in RStudio.
@@ -281,6 +287,33 @@ if (RUN_STAGE5_RESAMPLE) {
   }
 }
 
+# ---- STAGE 6 — Between-sex MEAN-level analysis (Einat's profile request) ----
+# Per-measure boys-vs-girls t-tests (Cohen's d + p; uncorrected primary, BH-FDR
+# beside) at the three levels (all / MIND,SSC / four age subsamples), computed on
+# BOTH the sex-balanced resample and the raw sample, plus z-scored profile plots.
+# Writes sex_means_raw.csv, sex_means_resampled.csv, sex_means_profiles.pdf.
+
+means_out_csv <- file.path(SEM_OUT_DIR, "sex_means_resampled.csv")
+if (RUN_STAGE6_MEANS) {
+  banner(paste0("STAGE 6 — Between-sex mean profiles [n_reps = ", RESAMPLE_N_REPS, "]"))
+  if (!FORCE_STAGE6_MEANS && outputs_fresh(means_out_csv, resamp_inputs)) {
+    cat("[CACHED] ", basename(means_out_csv), " present and newer than inputs.\n", sep = "")
+    cat("         (Set FORCE_STAGE6_MEANS <- TRUE to re-run.)\n")
+  } else {
+    cat("[RUNNING] sourcing sex-means analysis...\n\n")
+    t0 <- Sys.time()
+    old_wd <- getwd(); setwd(BASE_DIR)
+    source(file.path(BASE_DIR, "resample_balance.R"), local = FALSE)
+    source(file.path(BASE_DIR, "resample_lenses.R"),  local = FALSE)
+    source(file.path(BASE_DIR, "sex_means_profile.R"), local = FALSE)
+    run_sex_means(data_src = SEM_IQDATA_DIR, n_reps = RESAMPLE_N_REPS,
+                  seed = RESAMPLE_SEED, iq_policy = IQ_RATIO_POLICY,
+                  fdr_scope = RESAMPLE_FDR_SCOPE, out_dir = SEM_OUT_DIR)
+    setwd(old_wd)
+    cat("\n  >> done in ", round(as.numeric(Sys.time() - t0, units = "secs"), 1), " sec\n", sep = "")
+  }
+}
+
 # ---- SUMMARY ---------------------------------------------------------------
 
 banner("Pipeline complete.")
@@ -295,6 +328,9 @@ if (!is.null(latest)) {
 }
 if (RUN_STAGE5_RESAMPLE) {
   cat("  Stage 5 (Resampled):     ", resamp_out_csv, "\n", sep = "")
+}
+if (RUN_STAGE6_MEANS) {
+  cat("  Stage 6 (Sex means):     ", means_out_csv, "\n", sep = "")
 }
 cat("\nForce a re-run by setting FORCE_<STAGE> <- TRUE at top.\n")
 

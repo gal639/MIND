@@ -48,6 +48,15 @@ regression Cohen's f² / ΔR²), per Emilio. Report generator `make_report.R` �
 `analysis_report_2026-07-01_v2.html` (manuscript order: covariance → Fisher →
 regression).
 
+**Stage 6 (Einat's request, 2026-06-30 meeting):** between-subjects MEAN-level
+analysis in `sex_means_profile.R` — per-measure boys-vs-girls **t-tests (Cohen's
+d + p, uncorrected primary + BH-FDR)** at three levels (all / MIND,SSC / four age
+subsamples), on **both** the sex-balanced resample and the raw sample, plus
+**z-scored score-profile plots** (`sex_means_profiles.pdf`). Confirmed spec:
+per-measure means (not paired gaps), both data sources. Key result: ADOS
+(clinician) d≈0, SRS informants d≈+0.4–1.2 (girls higher) → a group-level
+**ADOS–SRS gap larger for girls = the masking signature**. Reported as report §6.
+
 Implemented + verified end-to-end (n_reps=20, real data, 0 failed reps,
 non-NA effect size at every lens, girls-higher direction holds):
 
@@ -129,6 +138,7 @@ non-NA effect size at every lens, girls-higher direction holds):
 | `resample_balance.R` | Resampling engine (`resample_balanced` + `resample_all_lenses` draw-once) + aggregation + `add_fdr` |
 | `resample_lenses.R` | Lens adapters + data loader + draw-once driver + scope-aware FDR |
 | `make_report.R` | Generates `analysis_report_2026-07-01_v2.html` from the pipeline outputs |
+| `sex_means_profile.R` | Stage 6: between-sex mean t-tests (Cohen's d) + z-scored profile plots |
 | `SEM_output/SEM_cov_comparison.R` | Canonical SEM covariance LRT (FIML) — model spec is the source of truth, mirrored in resample_lenses.R |
 | `correlation_matrices/sex_plots_cohorts_einat_040326.R` | Canonical Fisher r-to-z (BH-FDR headline) |
 | `sem_HLM_100426/section9_v2_pair_moderation.R` | Canonical regression M1–M4 (BH-FDR headline) |
