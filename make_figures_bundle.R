@@ -13,7 +13,8 @@ pages <- tibble::tribble(
   "Fig3_Reconciliation.png",                "4. Two kinds of agreement: LEVEL vs RANK",
   "Fig1_Profile_MIND_vs_SSC.png",           "5. Profile by cohort (MIND vs SSC)",
   "Fig2_Distributions_by_informant.png",    "6. Score distributions (violin + box)",
-  "Fig5_Reconciliation_plane.png",          "7. Reconciliation plane (LEVEL d vs RANK q)")
+  "Fig5_Reconciliation_plane.png",          "7. Reconciliation plane (LEVEL d vs RANK q)",
+  "Fig7_EffectSize_by_age.png",             "8. Robustness across age × cohort (Cohen's d + CI)")
 pages <- pages[file.exists(pages$png), ]
 
 # ---- contents page (rendered to PNG at ~ landscape) -------------------------
@@ -31,7 +32,8 @@ capt <- c(
  "Girls show a bigger LEVEL gap (A) yet a small higher RANK agreement (B). The level gap is the robust axis.",
  "Cohort replication: SRS-Parent girls-higher in both; SRS-Teacher (SSC only) largest; MIND ADOS girls-lower.",
  "Distributions: girls' teacher-SRS shifted up and more spread; ADOS overlaps.",
- "LEVEL (Cohen's d) vs RANK (Cohen's q): mostly horizontal spread — two different quantities.")
+ "LEVEL (Cohen's d) vs RANK (Cohen's q): mostly horizontal spread — two different quantities.",
+ "Cohen's d + CI over four subsamples: SRS-Parent girls-higher holds across age/cohort; teacher-SRS (SSC) largest.")
 y <- 0.80
 for (i in seq_len(nrow(pages))) {
   grid.text(pages$title[i], x = 0.05, y = y, hjust = 0, gp = gpar(fontface = "bold", fontsize = 11.5))
@@ -46,5 +48,5 @@ dev.off()
 all_png <- c("._contents.png", pages$png)
 imgs <- magick::image_read(all_png)
 magick::image_write(imgs, "Figures_for_Einat.pdf", format = "pdf", density = 150)
-unlink("._contents.png")
+file.rename("._contents.png", "Figures_00_contents.png")
 cat("WROTE Figures_for_Einat.pdf —", length(all_png), "pages\n")
