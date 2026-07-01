@@ -21,11 +21,32 @@ each predicted by ADI / SRS-parent / SRS-teacher (teacher only in SSC) / RBSR.
 
 ---
 
-## Current state (last updated 2026-06-14)
+## Current state (last updated 2026-07-01)
 
 Branch **`resampling-fdr-effectsizes`** (off `main`) adds a **sex-balanced
 resampling layer** per the statistical consultant's review. `main` is the
 pre-resampling baseline — check out `main` to roll back.
+
+### 2026-07-01 revision — Emilio's two flagged problems fixed
+Re-run end-to-end on the Asus laptop (R 4.5.2), n_reps=20. Both issues from the
+**2026-06-09 review meeting** (Emilio Ferrer, statistical consultant; transcript
+in Downloads) are resolved:
+1. **Fisher FDR family bug.** BH-FDR was applied over the full variable
+   combinatorics per cohort (~45 pairs incl. cross-domain pairs never reported),
+   over-correcting and washing out the signal. Now `filter(!is.na(domain))`
+   restricts to the **relevant within-domain pairs (the "41")** BEFORE `p.adjust`.
+   Restores the significant pair **SSC-preschool RRB ADI_RRB~RBSR_Total** (girls
+   r=.74 vs boys r=.43, p=.003 → p_fdr=.032). In `sex_plots_cohorts_einat_040326.R`.
+2. **Resampling now draws once, then tests.** New `resample_all_lenses()` draws
+   ONE matched boy subsample per replicate and runs all three lenses on that same
+   frame ("resample before any test starts"), replacing the per-lens driver.
+   Verified numerically identical to the old seed-aligned output (135/135 terms,
+   max Δ=0). Also coerces lavaan-typed SEM outputs to plain numeric so the lenses
+   row-bind.
+Effect sizes now reported at **every** lens (Fisher Cohen's q / Δr, SEM ΔCFI,
+regression Cohen's f² / ΔR²), per Emilio. Report generator `make_report.R` →
+`analysis_report_2026-07-01_v2.html` (manuscript order: covariance → Fisher →
+regression).
 
 Implemented + verified end-to-end (n_reps=20, real data, 0 failed reps,
 non-NA effect size at every lens, girls-higher direction holds):
@@ -47,6 +68,11 @@ non-NA effect size at every lens, girls-higher direction holds):
 - Imbalance handled by **resampling, not imputation**. Summarise by **median**.
 - **Effect-size empirical CI is primary**; median-p / prop-sig are descriptive only.
 - Correction = **Benjamini-Hochberg FDR** (not Bonferroni). Keep raw results.
+- Fisher FDR family = the **relevant within-domain pairs only** (the "41"), never
+  the full cross-domain combinatorics. Scope (within_subsample vs within_domain)
+  still open, but the family excludes unreported pairs either way.
+- Resampling = **draw once per replicate, then run all three lenses** on that same
+  balanced frame (not one draw per lens).
 - **FIML stays** (no listwise). LRT covariances are **joint, not partial**.
 - `n_reps = 1000` for the reportable run; small only for smoke tests.
 
@@ -100,8 +126,9 @@ non-NA effect size at every lens, girls-higher direction holds):
 | File | Role |
 |------|------|
 | `run_pipeline.R` | Orchestrator; caching; Stage 5 = resampling |
-| `resample_balance.R` | Resampling engine + aggregation + `add_fdr` |
-| `resample_lenses.R` | Lens adapters + data loader + scope-aware FDR driver |
+| `resample_balance.R` | Resampling engine (`resample_balanced` + `resample_all_lenses` draw-once) + aggregation + `add_fdr` |
+| `resample_lenses.R` | Lens adapters + data loader + draw-once driver + scope-aware FDR |
+| `make_report.R` | Generates `analysis_report_2026-07-01_v2.html` from the pipeline outputs |
 | `SEM_output/SEM_cov_comparison.R` | Canonical SEM covariance LRT (FIML) — model spec is the source of truth, mirrored in resample_lenses.R |
 | `correlation_matrices/sex_plots_cohorts_einat_040326.R` | Canonical Fisher r-to-z (BH-FDR headline) |
 | `sem_HLM_100426/section9_v2_pair_moderation.R` | Canonical regression M1–M4 (BH-FDR headline) |
@@ -111,9 +138,12 @@ non-NA effect size at every lens, girls-higher direction holds):
 
 ## Next steps / open threads
 
+- [x] **Fisher FDR family bug fixed** (2026-07-01) — corrected to within-domain pairs.
+- [x] **Resampling refactored to draw-once-then-test** (2026-07-01) — verified identical.
+- [x] **Effect sizes at every lens** added (Fisher / SEM / regression).
 - [ ] Gal + Einat confirm **FDR correction scope** and **IQ metric/policy**, then
-      set the params and run `n_reps = 1000`.
+      set the params and run `n_reps = 1000` (reportable run; ~11 min/stage at 1000).
 - [ ] Decide whether to merge `resampling-fdr-effectsizes` into `main`.
-- [ ] (Lower priority) Report sections in manuscript order: covariance/LRT first →
-      Fisher (which pairs drive it) → regression (sex vs IQ). The resampled output is
-      already emitted in that order; the canonical text dumps are not reordered.
+- [ ] (Lower priority) Write the manuscript prose in Emilio's order (covariance →
+      Fisher → regression). Code + report already emit that order; canonical text
+      dumps are not reordered.

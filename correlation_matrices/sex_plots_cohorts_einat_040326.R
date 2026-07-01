@@ -88,7 +88,12 @@ assign_domain <- function(v1, v2, map = domain_map) {
 }
 
 results <- results |>
-  mutate(domain = assign_domain(v1, v2))
+  mutate(domain = assign_domain(v1, v2)) |>
+  # FIX (Emilio/Einat meeting 2026-06-09): correct only the RELEVANT within-domain
+  # pairs (the "41"), NOT the full variable combinatorics per cohort — cross-domain
+  # pairs were never reported yet were inflating the BH-FDR family and washing out
+  # the true signal (e.g. SSC-Preschool RRB ADI_RRB~RBSR_Total).
+  filter(!is.na(domain))
 
 # 5b. multiplicity correction --------------------------------------------
 # HEADLINE is Benjamini-Hochberg FDR (replaces Bonferroni). Bonferroni kept

@@ -330,9 +330,9 @@ sem_lrt_lens <- function(d, sex_col = SEX_COL) {
 
     rows[[length(rows) + 1L]] <- tibble(
       term     = sprintf("%s | covariance_LRT", dom),
-      estimate = unname(lr[["Chisq diff"]][2]),   # chi-square difference
-      es       = cfi_free - cfi_con,              # delta-CFI (N-free)
-      p_value  = unname(lr[["Pr(>Chisq)"]][2])
+      estimate = as.numeric(lr[["Chisq diff"]][2]),   # chi-square difference
+      es       = as.numeric(cfi_free - cfi_con),      # delta-CFI (N-free)
+      p_value  = as.numeric(lr[["Pr(>Chisq)"]][2])
     )
   }
   if (length(rows) == 0L) return(tibble(term = character(), estimate = numeric(),
@@ -572,13 +572,25 @@ run_resampled_lenses <- function(data_src   = "SEM_output/data_with_iq",
     regression = function(d) regression_lens(d, iq_var = iq_var)
   )
 
-  res <- run_balanced_pipeline(
-    subsamples, lenses,
-    sex_col = SEX_COL, female_level = FEMALE_LEVEL,
-    n_reps = n_reps, seed = seed
-  )
-  # Replace run_balanced_pipeline's whole-table FDR with the scope-aware one.
-  res$p_fdr <- NULL; res$sig_fdr <- NULL
+  # DRAW-ONCE-THEN-TEST (Emilio): for each subsample, every replicate draws ONE
+  # matched boy subsample and runs ALL THREE lenses on that same balanced frame,
+  # so Fisher / SEM-LRT / regression see identical resampled subjects each rep.
+  res <- purrr::imap(subsamples, function(sub_df, sub_name) {
+    eng <- resample_all_lenses(
+      data = sub_df, lenses = lenses,
+      sex_col = SEX_COL, female_level = FEMALE_LEVEL,
+      n_reps = n_reps, seed = seed, verbose = TRUE
+    )
+    if (nrow(eng$reps) == 0L) return(NULL)
+    aggregate_resamples(eng$reps, by = c("lens", "term"),
+                        value_cols = c("estimate", "es"), p_col = "p_value") %>%
+      mutate(subsample = sub_name,
+             n_f = eng$n_f, n_m = eng$n_m,
+             n_reps = eng$n_reps, n_failed = eng$n_failed,
+             balanced = eng$balanced, .before = 1)
+  }) %>% purrr::compact() %>% purrr::list_rbind()
+
+  # Scope-aware BH-FDR (per lens, within the chosen correction family).
   res <- apply_fdr_by_scope(res, scope = fdr_scope)
 
   # Task 4 — emit in manuscript order: covariance/LRT first (the headline

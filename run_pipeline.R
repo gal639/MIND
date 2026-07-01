@@ -21,8 +21,8 @@ BASE_DIR <- "C:/Users/galor/OneDrive/Documents/Desktop/MIND"
 FORCE_STAGE2_DATAPREP <- FALSE   # SEM_*.rds in SEM_output/data/
 FORCE_STAGE3_IQ_MERGE <- FALSE   # SEM_*.rds in SEM_output/data_with_iq/
 FORCE_STAGE4_SEM      <- FALSE   # SEM_output/SEM_results.txt
-FORCE_STAGE4_FISHER   <- T   # SEM_output/Fisher_rz_results.txt
-FORCE_STAGE4_MODER    <- FALSE   # sem_HLM_100426/section9_v2_output/iq_<policy>_*
+FORCE_STAGE4_FISHER   <- TRUE    # re-run: Fisher FDR now on the within-domain family only
+FORCE_STAGE4_MODER    <- FALSE   # cached 2026-07-01 run already carries the effect sizes
 RUN_STAGE4_FISHER_PARTIAL <- TRUE
 
 # Moderation script — which IQ run to execute.
@@ -37,8 +37,8 @@ IQ_RATIO_POLICY <- "all"
 # Benjamini-Hochberg FDR; the effect-size empirical CI is the primary call.
 # Saved BESIDE the existing per-lens outputs (does not replace them).
 RUN_STAGE5_RESAMPLE   <- TRUE
-FORCE_STAGE5_RESAMPLE <- FALSE
-RESAMPLE_N_REPS       <- 1000L  # final run. Use a small value (e.g. 20) to smoke-test.
+FORCE_STAGE5_RESAMPLE <- TRUE    # re-run: draw-once-then-test refactor
+RESAMPLE_N_REPS       <- 20L    # TIMED PREVIEW for the 2026-07-01 discussion. Set to 1000L for the reportable run.
 RESAMPLE_SEED         <- 1L
 
 # SURFACED, NOT DECIDED — author + Einat must confirm:
@@ -157,11 +157,21 @@ run_or_skip(
 # Writes Fisher_rz_results.txt to SEM_output/.
 # at the top with the other flags
 
-# later, alongside RUN_STAGE4_FISHER:
+# Fisher r-to-z on PARTIAL correlations (each pair controlling for the other
+# vars in its domain). Non-fatal: a failure here must not block Stages 4c/5.
 if (RUN_STAGE4_FISHER_PARTIAL) {
-  run_script("4b' Fisher r-to-z (partial)",
-             file.path("correlation_matrices",
-                       "sex_plots_cohorts_einat_040326_partial.R"))
+  banner("STAGE 4b' — Fisher r-to-z (partial correlations)")
+  partial_script <- file.path(BASE_DIR, "correlation_matrices",
+                              "sex_plots_cohorts_einat_partial_040326.R")
+  if (file.exists(partial_script)) {
+    old_wd <- getwd(); setwd(BASE_DIR)
+    tryCatch(source(partial_script, echo = FALSE, local = FALSE),
+             error = function(e) cat("[WARN] partial Fisher failed (non-fatal): ",
+                                     conditionMessage(e), "\n", sep = ""))
+    setwd(old_wd)
+  } else {
+    cat("[SKIP] partial Fisher script not found: ", partial_script, "\n", sep = "")
+  }
 }
 fisher_inputs <- file.path(BASE_DIR, c(
   "MIND_Preschool_Boys.rds",  "MIND_Preschool_Girls.rds",

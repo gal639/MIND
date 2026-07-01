@@ -375,6 +375,12 @@ fit_one_pair <- function(data, outcome, predictor, subsample_label) {
   c_M2_pred <- extract_coef(fit_M2_full, "out", "pred_c")
   c_M2_sex  <- extract_coef(fit_M2_full, "out", "sex_F")
   R2_M2     <- tryCatch(lavInspect(fit_M2_full, "r2")[["out"]], error = function(e) NA_real_)
+
+  # Effect size for the Sex×Tool term: incremental R² and Cohen's f² vs the
+  # interaction-dropped null (predXsex ~ 0*). The null was already fit for the LRT.
+  R2_M2_null <- tryCatch(lavInspect(fit_M2_null, "r2")[["out"]], error = function(e) NA_real_)
+  dR2_M2 <- R2_M2 - R2_M2_null
+  f2_M2  <- if (is.na(R2_M2) || is.na(R2_M2_null) || (1 - R2_M2) <= 0) NA_real_ else (R2_M2 - R2_M2_null) / (1 - R2_M2)
   
   lrt12 <- if (!is.null(fit_M2_full) && !is.null(fit_M2_null))
     tryCatch(lavTestLRT(fit_M2_null, fit_M2_full), error = function(e) NULL) else NULL
@@ -385,6 +391,7 @@ fit_one_pair <- function(data, outcome, predictor, subsample_label) {
   # ---- M3 / M4: STUBS (require IQ policy) --------------------------------
   c_M3_int <- c_M4_int_sex <- c_M4_int_iq <- rep(NA_real_, 6)
   R2_M3 <- R2_M4 <- NA_real_
+  dR2_M4 <- f2_M4 <- NA_real_   # Sex×Tool effect size in the joint (IQ-controlled) model
   chi2_13 <- df_13 <- p_13 <- NA_real_
   chi2_34 <- df_34 <- p_34 <- NA_real_
   
@@ -420,6 +427,12 @@ fit_one_pair <- function(data, outcome, predictor, subsample_label) {
     c_M4_int_sex <- extract_coef(fit_M4_full, "out", "predXsex")
     c_M4_int_iq  <- extract_coef(fit_M4_full, "out", "predXiq")
     R2_M4        <- tryCatch(lavInspect(fit_M4_full, "r2")[["out"]], error = function(e) NA_real_)
+
+    # Sex×Tool effect size surviving IQ control: incremental R² and f² vs the
+    # M4 model with predXsex dropped (fit_M4_null_sx, already fit for the LRT).
+    R2_M4_null <- tryCatch(lavInspect(fit_M4_null_sx, "r2")[["out"]], error = function(e) NA_real_)
+    dR2_M4 <- R2_M4 - R2_M4_null
+    f2_M4  <- if (is.na(R2_M4) || is.na(R2_M4_null) || (1 - R2_M4) <= 0) NA_real_ else (R2_M4 - R2_M4_null) / (1 - R2_M4)
     
     lrt34 <- if (!is.null(fit_M4_full) && !is.null(fit_M4_null_sx))
       tryCatch(lavTestLRT(fit_M4_null_sx, fit_M4_full), error = function(e) NULL) else NULL
@@ -443,6 +456,7 @@ fit_one_pair <- function(data, outcome, predictor, subsample_label) {
     
     # M2
     R2_M2     = round(R2_M2, 4),
+    dR2_M2    = round(dR2_M2, 4), f2_M2 = round(f2_M2, 4),   # Sex×Tool effect size
     b_pred_M2 = round(c_M2_pred[1], 3),
     b_sex_M2  = round(c_M2_sex[1], 3),
     b_int_M2  = round(c_M2_int[1], 3), se_int_M2 = round(c_M2_int[2], 3),
@@ -459,6 +473,7 @@ fit_one_pair <- function(data, outcome, predictor, subsample_label) {
     
     # M4 (joint) — STUB unless RUN_IQ_MODELS
     R2_M4         = round(R2_M4, 4),
+    dR2_M4        = round(dR2_M4, 4), f2_M4 = round(f2_M4, 4),   # Sex×Tool | IQ effect size
     b_intSex_M4   = round(c_M4_int_sex[1], 3), se_intSex_M4 = round(c_M4_int_sex[2], 3),
     p_intSex_M4   = round(c_M4_int_sex[4], 4),
     ci_lo_intSex_M4 = round(c_M4_int_sex[5], 3), ci_hi_intSex_M4 = round(c_M4_int_sex[6], 3),
@@ -577,6 +592,8 @@ for (sub in unique(results$Subsample)) {
                 r$p_int_M2, r$p_bonf_M2, r$sig_M2, r$p_fdr_M2, r$sig_fdr_M2))
     cat(sprintf("        95%%CI [%.3f, %.3f]   LRT Δχ²(%.0f)=%.3f p=%.4f\n",
                 r$ci_lo_M2, r$ci_hi_M2, r$df_12, r$chi2_12, r$p_lrt_12))
+    cat(sprintf("        effect size (Pred×Sex): ΔR²=%.4f  Cohen's f²=%.4f\n",
+                r$dR2_M2, r$f2_M2))
     if (RUN_IQ_MODELS) {
       cat(sprintf("    M3: R²=%.3f   b(Pred×IQ)=%.3f  SE=%.3f  95%%CI [%.3f, %.3f]  p=%.4f  p_bonf=%.4f %s  p_fdr=%.4f %s\n",
                   r$R2_M3, r$b_int_M3, r$se_int_M3, r$ci_lo_M3, r$ci_hi_M3,
@@ -586,6 +603,8 @@ for (sub in unique(results$Subsample)) {
                   r$p_intSex_M4, r$p_bonf_M4, r$sig_M4, r$p_fdr_M4, r$sig_fdr_M4))
       cat(sprintf("        b(Pred×IQ in M4)=%.3f  SE=%.3f  p=%.4f\n",
                   r$b_intIQ_M4, r$se_intIQ_M4, r$p_intIQ_M4))
+      cat(sprintf("        effect size (Pred×Sex | IQ): ΔR²=%.4f  Cohen's f²=%.4f\n",
+                  r$dR2_M4, r$f2_M4))
     }
     cat("\n")
   }

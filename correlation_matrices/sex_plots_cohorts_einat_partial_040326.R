@@ -165,11 +165,13 @@ results <- imap_dfr(cohorts, function(fg, cohort_lab) {
     })
   })
 }) %>%
+  group_by(cohort) %>%
   mutate(
-    p_bonf = p.adjust(p, "bonferroni"),
-    p_fdr  = p.adjust(p, "fdr"),
-    sig    = p_bonf < .05
-  )
+    p_fdr  = p.adjust(p, "BH"),           # HEADLINE (BH-FDR, within cohort)
+    p_bonf = p.adjust(p, "bonferroni"),   # reference only
+    sig    = p_fdr < .05
+  ) %>%
+  ungroup()
 
 # helper for clean ordering inside facets
 order_within <- function(x, by) factor(x, levels = x[order(by)])

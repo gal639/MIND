@@ -110,6 +110,81 @@ resample_balanced <- function(data,
 
 
 # -----------------------------------------------------------------------------
+# Multi-lens engine: DRAW ONCE, then run every lens on the SAME resample
+# -----------------------------------------------------------------------------
+#' Run SEVERAL lenses over ONE set of sex-balanced resamples.
+#'
+#' Emilio's design, made explicit: resample BEFORE any test runs. Each replicate
+#' draws ONE matched boy subsample, builds ONE balanced data frame (all girls +
+#' those boys), and runs EVERY lens on that identical frame. So Fisher, the SEM
+#' LRT and the regression all see the *same* resampled subjects each replicate —
+#' rather than each lens drawing its own boys (which the old per-lens driver did,
+#' aligned only implicitly by a shared seed).
+#'
+#' @param lenses Named list of analysis_fn; each returns term/estimate/es/p_value.
+#' @return list(reps = <long tibble, incl. `lens` + `.rep`>, n_f, n_m, n_reps,
+#'              n_failed, balanced)
+resample_all_lenses <- function(data, lenses,
+                                sex_col      = "sex",
+                                female_level = "F",
+                                n_reps       = 1000L,
+                                seed         = 1L,
+                                verbose      = TRUE) {
+
+  stopifnot(is.data.frame(data), is.list(lenses), length(lenses) > 0,
+            sex_col %in% names(data))
+
+  is_f    <- data[[sex_col]] == female_level
+  females <- data[is_f, , drop = FALSE]
+  males   <- data[!is_f & !is.na(data[[sex_col]]), , drop = FALSE]
+  n_f     <- nrow(females)
+  n_m     <- nrow(males)
+
+  # Apply every lens to ONE balanced data frame; tag each row with its lens.
+  apply_lenses <- function(bal_df, b) {
+    map(names(lenses), function(lname) {
+      res <- tryCatch(lenses[[lname]](bal_df), error = function(e) NULL)
+      if (is.null(res) || nrow(res) == 0L) return(NULL)
+      res <- as_tibble(res)
+      # Strip estimator-specific S3 classes (e.g. lavaan.vector) so the three
+      # lenses' columns row-bind cleanly across the shared resample.
+      for (cc in intersect(c("estimate", "es", "p_value"), names(res)))
+        res[[cc]] <- as.numeric(res[[cc]])
+      mutate(res, lens = lname, .rep = b)
+    }) |> compact() |> list_rbind()
+  }
+
+  # No imbalance to correct: one fit per lens on the full data (single rep).
+  if (n_m <= n_f) {
+    if (verbose)
+      message(sprintf("balanced already (n_F=%d >= n_M=%d): single fit per lens.",
+                      n_f, n_m))
+    reps <- apply_lenses(data, 1L)
+    return(list(reps = reps, n_f = n_f, n_m = n_m,
+                n_reps = 1L, n_failed = as.integer(nrow(reps) == 0L),
+                balanced = FALSE))
+  }
+
+  # Imbalance: girls fixed; ONE matched boy draw per replicate feeds ALL lenses.
+  reps_list <- map(seq_len(n_reps), function(b) {
+    idx <- with_seed(seed + b, sample.int(n_m, size = n_f, replace = FALSE))
+    bal <- bind_rows(females, males[idx, , drop = FALSE])
+    apply_lenses(bal, b)
+  })
+  n_failed <- sum(map_lgl(reps_list, function(x) is.null(x) || nrow(x) == 0L))
+  reps     <- list_rbind(compact(reps_list))
+
+  if (verbose)
+    message(sprintf("drew %d boys to match %d girls x %d reps | %d reps ok (%d empty) | lenses: %s",
+                    n_f, n_f, n_reps, n_reps - n_failed, n_failed,
+                    paste(names(lenses), collapse = ", ")))
+
+  list(reps = reps, n_f = n_f, n_m = n_m,
+       n_reps = n_reps, n_failed = n_failed, balanced = TRUE)
+}
+
+
+# -----------------------------------------------------------------------------
 # Aggregation
 # -----------------------------------------------------------------------------
 #' Collapse the replicate distribution to a per-term summary
@@ -127,6 +202,7 @@ resample_balanced <- function(data,
 #' @param ci        Central mass for the empirical interval (default .95).
 #' @param alpha     Significance threshold for prop_sig (default .05).
 aggregate_resamples <- function(reps,
+                                by         = "term",
                                 value_cols = c("estimate", "es"),
                                 p_col      = "p_value",
                                 ci         = 0.95,
@@ -158,7 +234,7 @@ aggregate_resamples <- function(reps,
              hi     = ~ q(.x, hi)),
         .names = "{.col}_{.fn}"
       ),
-      .by = term
+      .by = all_of(by)
     )
 
   # descriptive p summaries, if a p column was supplied and exists
@@ -167,9 +243,9 @@ aggregate_resamples <- function(reps,
       summarise(
         p_median = stats::median(.data[[p_col]], na.rm = TRUE),
         prop_sig = mean(.data[[p_col]] < alpha, na.rm = TRUE),
-        .by = term
+        .by = all_of(by)
       )
-    out <- left_join(out, psum, by = join_by(term))
+    out <- left_join(out, psum, by = by)
   }
 
   out
