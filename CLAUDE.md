@@ -5,8 +5,10 @@ sex differences in the agreement between autism diagnostic tools** (Gal Or, with
 Dr. Einat Waizbard). Deep technical decisions live in [`MEMORY.md`](MEMORY.md);
 this file is the map + the current work plan.
 
-_Last updated 2026-07-21 (after integrating the two-computer branches and Einat's
-"close the results" email + Zoom)._
+_Last updated 2026-07-21 (Bland-Altman-by-sex figures built [raw + sex-balanced];
+`run_pipeline.R` made a portable one-shot run and verified end-to-end at
+n_reps=20. Earlier that day: two-computer branch integration + Einat's "close the
+results" email/Zoom.)_
 
 ---
 
@@ -53,18 +55,26 @@ main  ── EVERYTHING: resampling + BH-FDR + effect sizes + Stage 6 means +
 
 ## 3. How to run
 
-R 4.6.0. Packages: `lavaan` (+ pbivnorm, numDeriv, quadprog), tidyverse family
-(dplyr/purrr/tibble/tidyr/ggplot2), withr, ragg; `semPlot` + `writexl` only for
-the canonical SEM/regression plot/Excel outputs.
+R 4.6.0 at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe` (not on PATH).
+`run_pipeline.R` is now a **portable, one-shot** run that does everything:
 
-1. **Sync scripts** into `BASE_DIR` (copy changed/new `.R` from the git repo).
-2. **Analysis (Stages 2–6):** open `BASE_DIR` in RStudio → edit `run_pipeline.R`
-   CONFIG → `source("run_pipeline.R")`. Cache-aware; set `FORCE_STAGE*<-TRUE` to
-   re-run. **Set `RESAMPLE_N_REPS <- 1000L` for the reportable run** (currently
-   `20L` = smoke test; 1000 is multi-hour — run overnight).
-3. **Figures:** the `fig_*.R` / `make_*.R` scripts run individually from
-   `BASE_DIR` (each `setwd()`s to it, sources `fig_common.R`, writes PNG+PDF via
-   `fc_save()`), then `make_figures_bundle.R` assembles `Figures_for_Einat.pdf`.
+1. **Sync scripts** git → `BASE_DIR` first (the OneDrive copies can be stale).
+2. **Run it:** `source("run_pipeline.R")` in RStudio, or `Rscript run_pipeline.R`
+   from `BASE_DIR`. It:
+   - **self-locates `BASE_DIR`** (`MIND_BASE_DIR` env → the script's folder → known
+     fallback, validated by `SEM_output/data_with_iq` being present);
+   - **installs any missing packages and WAITS** (install-and-wait; won't run
+     partial) — lavaan, tidyverse, semPlot, writexl, magick, patchwork, ggrepel,
+     ragg, tidytext, ...;
+   - runs **resample-first**: data → Stage 4 resampling → Stage 5 sex-means →
+     Stage 6 canonical tests (SEM → Fisher → moderation) → Stage 7 figures
+     (raw + sex-balanced) + `make_figures_bundle.R` → `Figures_for_Einat.pdf`.
+   - Cache-aware; force a stage with its `FORCE_*` flag.
+3. **Set `RESAMPLE_N_REPS <- 1000L` for the reportable run** (currently `20L` =
+   smoke test; 1000 is multi-hour — run overnight, and check with Gal first).
+
+Verified end-to-end at n_reps=20 (exit 0, ~22 min): resampling ~931s → SEM ~185s →
+Fisher ~10s → moderation ~153s → figures/bundle (18-page `Figures_for_Einat.pdf`).
 
 ---
 
@@ -91,6 +101,22 @@ direction is stable. Fisher pairs show the pattern but mostly don't survive FDR.
 Sex×IQ regression: SRS-Social-Parent and SRS-Total-Parent survive FDR. Effect
 sizes are modest (a few ~0.5 near-significant, many 0.1–0.2). Balancing the M:F
 ratio did **not** change the story → it's the result, not a power artifact.
+
+**Bland-Altman-by-sex findings (2026-07-21, from `fig_bland_altman.R`):** the
+level-gap / rank-agreement dissociation is now visible per child.
+- **Masking gradient** (girls' informant−clinician gap, z units; boys ≈ 0):
+  ADI +0.08/+0.20/−0.15 (Total/Social/RRB) < SRS-Parent +0.26/+0.24/+0.18 <
+  **SRS-Teacher +0.57/+0.43/+0.54**. Girls−boys Cohen's *d* = teacher
+  +0.60/+0.43/+0.56, parent +0.24/+0.23/+0.16. Teacher−ADI (girls) +0.5..+0.7 = the
+  largest gaps in the whole set. Informants who see the child in current/naturalistic
+  settings show the biggest gap: **teacher > parent-SRS > retrospective ADI interview**.
+- **RBSR does NOT show girls-higher** → within RRB the masking signal is SRS-specific.
+- **Rank preserved:** within-sex ADOS↔informant *r* is generally higher for girls than
+  boys (teacher-RRB .40 vs .24; teacher-Total .32 vs .24) → the gap is systematic
+  (camouflage), not idiosyncratic noise.
+- **Fresh full-data SEM LRT:** covariance structure differs by sex in every full-sample
+  domain (all p<2e-16) and across SSC; MIND TOTAL (p=.008) & SOCIAL (p=.019) but not RRB;
+  MIND-preschool n.s. (underpowered).
 
 ---
 
@@ -123,18 +149,17 @@ girls at the highest severity** (often the most informative informant).
 
 ## 6. Work plan — "close the results, then write" (priority order per Einat)
 
-**0. Reconcile the run location (do first).** Sync the integrated scripts into
-   `BASE_DIR` so the pipeline + figure scripts run the newest code (see §1/§3).
-   Confirm data loads (`build_resample_data("SEM_output/data_with_iq")`).
+**0. ✅ DONE — run location reconciled + pipeline is a portable one-shot.** Scripts
+   synced git → `BASE_DIR`; data loads; `run_pipeline.R` self-locates BASE_DIR,
+   installs-and-waits on missing packages, runs resample-first through figures +
+   bundle. Verified end-to-end at n_reps=20 (see §3).
 
-**1. Bland-Altman plots by sex — TOP priority (Einat: more important than
-   resampling).** New `fig_bland_altman.R`. For each ADOS↔SRS pair, per child:
-   x = mean(z(ADOS), z(informant)), y = z(informant) − z(ADOS); facet/colour by
-   sex; add per-sex mean-bias line + ±1.96 SD limits of agreement. This makes the
-   *systematic gap + preserved correlation* dissociation visible in one figure.
-   Reuse `fig_common.R` (loader, `SEXCOL`, `theme_einat`, `fc_save`) and the
-   pair table from `fig_gap_density.R` (which already computes the y-axis
-   difference by sex with Cohen's d — the Bland-Altman precursor).
+**1. ✅ DONE — Bland-Altman plots by sex** (`fig_bland_altman.R`). Emits the focused
+   6-panel ADOS↔SRS grid AND all within-domain pairs per domain (Total/Social/RRB),
+   each in **raw + sex-balanced-resample** versions (8 figures). Resampled = girls
+   fixed, boys' lines = median over N draws, cloud = one shared medoid draw. Findings
+   in §4. Remaining choices: bump to n_reps=1000 (only nudges the resampled boys'
+   lines), and pick which of the 8 go in Einat's deck.
 
 **2. Between-group vs within-child contrast (Einat's request).** Largely built in
    `sex_means_profile.R` (3 levels/7 slices, raw + resampled, t + Cohen's d,

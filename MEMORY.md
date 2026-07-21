@@ -171,11 +171,18 @@ write"). Full detail in [`CLAUDE.md`](CLAUDE.md) §6.
 - [x] Fisher FDR family bug fixed (2026-07-01); resampling draw-once (2026-07-01);
       effect sizes at every lens.
 - [x] Two-computer branches integrated + merged onto `main` and pushed (2026-07-21).
-- [ ] **(1, TOP) Bland-Altman plots by sex** — new `fig_bland_altman.R`: per child
-      x = mean(z(ADOS), z(SRS)), y = z(SRS) − z(ADOS), by sex, + per-sex mean-bias
-      line & ±1.96 SD limits of agreement. Reuse `fig_common.R`; the y-axis
-      difference already exists in `fig_gap_density.R`. Einat: more important than
-      more resampling.
+- [x] **(1, TOP) Bland-Altman plots by sex — DONE 2026-07-21** (`fig_bland_altman.R`).
+      Focused 6-panel ADOS↔SRS grid + all within-domain pairs per domain, each in
+      **raw + sex-balanced-resample** (8 figures). Resampled uniting method: girls
+      fixed, boys' bias/LoA/r = median over N draws, cloud = one shared medoid draw
+      (`fc_balanced_draws` / `fc_medoid` in `fig_common.R`). Findings → CLAUDE.md §4.
+- [x] **Pipeline made a portable one-shot — DONE 2026-07-21.** `run_pipeline.R`
+      self-locates `BASE_DIR` (`MIND_BASE_DIR` env / script folder / fallback),
+      **installs-and-waits** on missing packages (semPlot/writexl/magick/patchwork/
+      ggrepel/…), reordered **resample-first**, new Stage 7 runs the fig suite
+      (raw+resampled) + `make_figures_bundle.R`. Partial-Fisher stray `~/Desktop`
+      path fixed. Verified end-to-end at n_reps=20 (exit 0, ~22 min). Pushed
+      (6eb4255, c335857).
 - [ ] **(2) Between-group vs within-child contrast** — mostly built in
       `sex_means_profile.R`; add explicit matched-pair t-tests (SRS-Total↔ADOS-Total,
       SRS-Social↔ADOS-SA, SRS-RRB↔ADOS-RRB) across the 7 slices (effect size + p, on
