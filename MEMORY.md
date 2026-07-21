@@ -21,11 +21,26 @@ each predicted by ADI / SRS-parent / SRS-teacher (teacher only in SSC) / RBSR.
 
 ---
 
-## Current state (last updated 2026-07-01)
+## Current state (last updated 2026-07-21)
 
-Branch **`resampling-fdr-effectsizes`** (off `main`) adds a **sex-balanced
-resampling layer** per the statistical consultant's review. `main` is the
-pre-resampling baseline — check out `main` to roll back.
+> See [`CLAUDE.md`](CLAUDE.md) for the session primer: two-computer location map,
+> scientific framing, and the current work plan. This file keeps the deep log.
+
+**Branches integrated + merged onto `main` (2026-07-21).** Both computers' work
+was a clean linear chain (`main` → `resampling-fdr-effectsizes` +8 →
+`figures-for-einat` +9) and is now all **merged into `main`** — the integrated
+trunk to work on. The feature branches are kept as history (fully merged; safe to
+delete). All pushed to `origin`.
+
+**Run location.** Scripts are versioned in `Documents\GitHub\einat-paper\MIND`
+(code only); the pipeline runs from `BASE_DIR = OneDrive\Documents\Desktop\MIND`
+(data + a script copy). Sync scripts git → `BASE_DIR` before running; do not run
+git in the OneDrive copy. All data RDS are present in `BASE_DIR` (verified
+2026-07-21).
+
+Branch **`resampling-fdr-effectsizes`** (off `main`) adds the **sex-balanced
+resampling layer** per Emilio's review; `figures-for-einat` adds the figure suite
+(`fig_*.R`, `Figures_for_Einat.pdf`). Check out `main` to roll back.
 
 ### 2026-07-01 revision — Emilio's two flagged problems fixed
 Re-run end-to-end on the Asus laptop (R 4.5.2), n_reps=20. Both issues from the
@@ -150,12 +165,27 @@ non-NA effect size at every lens, girls-higher direction holds):
 
 ## Next steps / open threads
 
-- [x] **Fisher FDR family bug fixed** (2026-07-01) — corrected to within-domain pairs.
-- [x] **Resampling refactored to draw-once-then-test** (2026-07-01) — verified identical.
-- [x] **Effect sizes at every lens** added (Fisher / SEM / regression).
-- [ ] Gal + Einat confirm **FDR correction scope** and **IQ metric/policy**, then
-      set the params and run `n_reps = 1000` (reportable run; ~11 min/stage at 1000).
-- [ ] Decide whether to merge `resampling-fdr-effectsizes` into `main`.
-- [ ] (Lower priority) Write the manuscript prose in Emilio's order (covariance →
-      Fisher → regression). Code + report already emit that order; canonical text
-      dumps are not reordered.
+Priority order per Einat's 2026-07-21 email + Zoom ("close the results, then
+write"). Full detail in [`CLAUDE.md`](CLAUDE.md) §6.
+
+- [x] Fisher FDR family bug fixed (2026-07-01); resampling draw-once (2026-07-01);
+      effect sizes at every lens.
+- [x] Two-computer branches integrated + merged onto `main` and pushed (2026-07-21).
+- [ ] **(1, TOP) Bland-Altman plots by sex** — new `fig_bland_altman.R`: per child
+      x = mean(z(ADOS), z(SRS)), y = z(SRS) − z(ADOS), by sex, + per-sex mean-bias
+      line & ±1.96 SD limits of agreement. Reuse `fig_common.R`; the y-axis
+      difference already exists in `fig_gap_density.R`. Einat: more important than
+      more resampling.
+- [ ] **(2) Between-group vs within-child contrast** — mostly built in
+      `sex_means_profile.R`; add explicit matched-pair t-tests (SRS-Total↔ADOS-Total,
+      SRS-Social↔ADOS-SA, SRS-RRB↔ADOS-RRB) across the 7 slices (effect size + p, on
+      the resample); frame the group mean-gap beside the within-child agreement.
+- [ ] **(3) Score-profile graphs** per measure — `sex_means_profiles.pdf` +
+      `make_profile_by_informant.R` already emit these; confirm/polish for Einat.
+- [ ] **(4, lower) Run `n_reps = 1000`** overnight; confirm the story holds.
+- [ ] **(5) Email Emilio** — resample once vs. re-resample before each test.
+- [ ] Confirm **FDR scope** + **IQ metric/policy**; decide **authorship** (Gal
+      1st-author 4th paper vs. Einat 1st + Gal stats/figures).
+      → **2026-07-23 12:00** results-closing meeting.
+- [ ] (Deferred) Manuscript prose in Emilio's order (covariance → Fisher →
+      regression); code + report already emit that order.
