@@ -26,7 +26,8 @@ REQUIRED_PKGS <- c(
   "dplyr","purrr","tibble","tidyr","ggplot2","withr","lavaan",   # core + resampling
   "pbivnorm","numDeriv","quadprog",                              # lavaan estimator deps
   "pacman","tidytext",                                            # Fisher script
-  "ragg","semPlot","writexl","magick","gridExtra","grid")        # figures / SEM diagram / Excel / bundle
+  "ragg","semPlot","writexl","magick",                           # SEM diagram / Excel / bundle
+  "patchwork","ggrepel","gridExtra","scales","grid")             # figure-script deps
 .have <- function(p) requireNamespace(p, quietly = TRUE)
 .missing <- REQUIRED_PKGS[!vapply(REQUIRED_PKGS, .have, logical(1))]
 if (length(.missing)) {
