@@ -1,6 +1,7 @@
 # Iteration 2: distribution view (violin + boxplot) by informant/subscale/sex.
 # Shows the full spread (variance) and any multimodality (subgroups), z-scored.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 
 L <- fc_long_z(fc_slices()[["All combined"]])

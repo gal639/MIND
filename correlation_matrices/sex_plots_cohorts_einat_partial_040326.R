@@ -23,7 +23,10 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, tidytext)
 
 # 1. output setup ---------------------------------------------------------
-output_dir <- "~/Desktop/MIND/SEM_output"
+# Write into BASE_DIR/SEM_output (relative to getwd(), set to BASE_DIR by the
+# pipeline) — mirrors the main Fisher script. Previously hardcoded ~/Desktop/MIND,
+# which wrote to a stray non-OneDrive folder on Gal's machine.
+output_dir <- "SEM_output"
 plots_dir  <- file.path(output_dir, "plots")
 dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
 

@@ -1,6 +1,7 @@
 # Iteration 4: Cohen's d (girls-boys) per measure with 95% CI, by instrument,
 # across All / MIND / SSC — shows which sex mean-differences are robust & replicate.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 
 sm <- readRDS("SEM_output/sex_means.rds")$resampled

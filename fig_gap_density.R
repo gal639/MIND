@@ -1,7 +1,8 @@
 # Iteration 6: the masking gap. Per child, gap = z(informant) - z(ADOS clinician).
 # gap>0 = informant reports MORE than the clinician sees. Girls' distribution
 # shifted right of boys' = informant-clinician gap larger for girls (masking).
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 
 full <- fc_slices()[["All combined"]]

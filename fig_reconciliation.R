@@ -1,5 +1,6 @@
 # Iteration 3: reconciliation figure — LEVEL (fan) vs RANK (dumbbell), polished.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 suppressPackageStartupMessages(library(patchwork))
 

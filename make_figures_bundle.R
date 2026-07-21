@@ -1,47 +1,53 @@
 # Iteration 7 (robust): assemble Figures_for_Einat.pdf from the rendered PNGs
 # (each visually verified) using magick. Run the fig_*.R / make_profile_*.R
 # scripts first to (re)generate the PNGs; this just collates them + a contents page.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 suppressPackageStartupMessages({ library(magick); library(grid) })
 
+# Caption lives IN the tribble (3rd column) so it can never desync from the page
+# list after the file.exists() filter below. Bland-Altman figures (raw + the
+# sex-balanced resample) are included per the "figures on resampled + actual" ask.
 pages <- tibble::tribble(
-  ~png, ~title,
-  "Profile_by_Informant_1_profile.png",     "1. Symptom profile by informant & sex (+ variance)",
-  "Profile_by_Informant_2_descriptives.png","1b. Descriptives table (n, mean, SD, SD ratio)",
-  "Fig6_Masking_gap.png",                   "2. The masking gap (informant − clinician, per child)",
-  "Fig4_EffectSize_forest.png",             "3. Sex mean difference (Cohen's d) + 95% CI by informant",
-  "Fig3_Reconciliation.png",                "4. Two kinds of agreement: LEVEL vs RANK",
-  "Fig1_Profile_MIND_vs_SSC.png",           "5. Profile by cohort (MIND vs SSC)",
-  "Fig2_Distributions_by_informant.png",    "6. Score distributions (violin + box)",
-  "Fig5_Reconciliation_plane.png",          "7. Reconciliation plane (LEVEL d vs RANK q)",
-  "Fig7_EffectSize_by_age.png",             "8. Robustness across age × cohort (Cohen's d + CI)")
+  ~png, ~title, ~caption,
+  "Profile_by_Informant_1_profile.png",     "Symptom profile by informant & sex (+ variance)",   "Grouped by instrument (ADOS→ADI→SRS→RBSR). Girls-higher on SRS, esp. teacher.",
+  "Profile_by_Informant_2_descriptives.png","Descriptives table (n, mean, SD, SD ratio)",        "SD ratio flags girls more variable on teacher-SRS (1.30 / 1.18).",
+  "Fig8_BlandAltman_by_sex.png",            "Bland-Altman by sex — ADOS vs SRS (raw)",           "Per-child level gap; girls' bias off 0, boys near 0; largest for teacher.",
+  "Fig8_BlandAltman_by_sex_resampled.png",  "Bland-Altman by sex — ADOS vs SRS (sex-balanced)",  "Same, on the sex-balanced resample: girls fixed, boys balanced; median of the draws.",
+  "Fig6_Masking_gap.png",                   "The masking gap (informant − clinician, per child)","Girls' curve shifts right, largest for teacher-SRS (gap d up to +0.60) = masking.",
+  "Fig8_BlandAltman_Total.png",             "Bland-Altman — Total domain, all pairs (raw)",      "Every within-domain instrument pair; ADOS panels = clinician gap.",
+  "Fig8_BlandAltman_Social.png",            "Bland-Altman — Social domain, all pairs (raw)",     "Every within-domain instrument pair, Social.",
+  "Fig8_BlandAltman_RRB.png",               "Bland-Altman — RRB domain, all pairs (raw)",        "Every within-domain instrument pair, RRB.",
+  "Fig8_BlandAltman_Total_resampled.png",   "Bland-Altman — Total, all pairs (sex-balanced)",    "Total-domain pairs on the sex-balanced resample.",
+  "Fig8_BlandAltman_Social_resampled.png",  "Bland-Altman — Social, all pairs (sex-balanced)",   "Social-domain pairs on the sex-balanced resample.",
+  "Fig8_BlandAltman_RRB_resampled.png",     "Bland-Altman — RRB, all pairs (sex-balanced)",      "RRB-domain pairs on the sex-balanced resample.",
+  "Fig4_EffectSize_forest.png",             "Sex mean difference (Cohen's d) + 95% CI",          "ADOS ~0 (MIND girls-lower); SRS girls-higher and replicates.",
+  "Fig3_Reconciliation.png",                "Two kinds of agreement: LEVEL vs RANK",             "Bigger LEVEL gap yet a small higher RANK agreement.",
+  "Fig1_Profile_MIND_vs_SSC.png",           "Profile by cohort (MIND vs SSC)",                   "SRS-Parent girls-higher in both; SRS-Teacher (SSC) largest.",
+  "Fig2_Distributions_by_informant.png",    "Score distributions (violin + box)",                "Girls' teacher-SRS shifted up and more spread; ADOS overlaps.",
+  "Fig5_Reconciliation_plane.png",          "Reconciliation plane (LEVEL d vs RANK q)",          "Mostly horizontal spread — two different quantities.",
+  "Fig7_EffectSize_by_age.png",             "Robustness across age × cohort (Cohen's d + CI)",   "SRS-Parent girls-higher holds across age/cohort; teacher-SRS (SSC) largest.")
 pages <- pages[file.exists(pages$png), ]
 
-# ---- contents page (rendered to PNG at ~ landscape) -------------------------
+# ---- contents page (dynamic layout so it fits ANY number of pages) ----------
 ragg::agg_png("._contents.png", width = 1650, height = 1200, res = 150, background = "white")
 grid.newpage()
 grid.text("Figures — Sex differences in autism tool agreement",
-          x = 0.04, y = 0.93, hjust = 0, gp = gpar(fontface = "bold", fontsize = 20))
-grid.text("Prepared for Dr. Einat Waizbard  ·  MIND (APP) + SSC  ·  2026-07-01",
-          x = 0.04, y = 0.885, hjust = 0, gp = gpar(fontsize = 12, col = "grey35"))
-capt <- c(
- "Grouped by instrument (ADOS→ADI→SRS→RBSR). Girls-higher on SRS, esp. teacher; more variable only on teacher-SRS.",
- "Raw n, mean, SD per group; SD ratio flags girls more variable on teacher-SRS (1.30 / 1.18).",
- "Per-child informant−clinician gap; girls' curve shifts right, largest for teacher-SRS (gap d up to +0.60) = masking.",
- "Cohen's d with 95% CI by informant, All/MIND/SSC. ADOS ~0 (MIND girls-lower); SRS girls-higher and replicates.",
- "Girls show a bigger LEVEL gap (A) yet a small higher RANK agreement (B). The level gap is the robust axis.",
- "Cohort replication: SRS-Parent girls-higher in both; SRS-Teacher (SSC only) largest; MIND ADOS girls-lower.",
- "Distributions: girls' teacher-SRS shifted up and more spread; ADOS overlaps.",
- "LEVEL (Cohen's d) vs RANK (Cohen's q): mostly horizontal spread — two different quantities.",
- "Cohen's d + CI over four subsamples: SRS-Parent girls-higher holds across age/cohort; teacher-SRS (SSC) largest.")
-y <- 0.80
-for (i in seq_len(nrow(pages))) {
-  grid.text(pages$title[i], x = 0.05, y = y, hjust = 0, gp = gpar(fontface = "bold", fontsize = 11.5))
-  grid.text(capt[i], x = 0.075, y = y - 0.033, hjust = 0, gp = gpar(fontsize = 9.5, col = "grey30"))
-  y <- y - 0.088
+          x = 0.04, y = 0.955, hjust = 0, gp = gpar(fontface = "bold", fontsize = 19))
+grid.text("Prepared for Dr. Einat Waizbard  ·  MIND (APP) + SSC",
+          x = 0.04, y = 0.918, hjust = 0, gp = gpar(fontsize = 11, col = "grey35"))
+n <- nrow(pages); top <- 0.86; bot <- 0.06; step <- (top - bot) / max(n, 1)
+show_cap <- n <= 12; tfs <- if (n > 14) 9 else 11
+y <- top
+for (i in seq_len(n)) {
+  grid.text(paste0(i, ". ", pages$title[i]), x = 0.05, y = y, hjust = 0,
+            gp = gpar(fontface = "bold", fontsize = tfs))
+  if (show_cap) grid.text(pages$caption[i], x = 0.075, y = y - step * 0.42, hjust = 0,
+                          gp = gpar(fontsize = 9, col = "grey30"))
+  y <- y - step
 }
-grid.text("Effect sizes throughout (Cohen's d/q); uncorrected alpha primary, BH-FDR beside. z-standardized within slice. Preview n_reps=20.",
-          x = 0.04, y = 0.04, hjust = 0, gp = gpar(fontsize = 9, col = "grey40", fontface = "italic"))
+grid.text("Effect sizes throughout (Cohen's d/q); uncorrected alpha primary, BH-FDR beside. z-standardized. Resampled = sex-balanced (girls fixed, boys matched).",
+          x = 0.04, y = 0.03, hjust = 0, gp = gpar(fontsize = 8.5, col = "grey40", fontface = "italic"))
 dev.off()
 
 # ---- collate to one PDF ------------------------------------------------------

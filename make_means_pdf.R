@@ -5,7 +5,8 @@
 # glance. Reads SEM_output/sex_means.rds (resampled d) + rebuilds the raw slices
 # for the profile means. Writes Means_Profile_Report_2026-07-01.pdf at repo root.
 # =============================================================================
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 suppressPackageStartupMessages({ library(dplyr); library(ggplot2); library(purrr); library(tibble); library(tidyr) })
 source("resample_balance.R"); source("resample_lenses.R"); source("sex_means_profile.R")
 

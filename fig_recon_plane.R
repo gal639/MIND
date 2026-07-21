@@ -1,7 +1,8 @@
 # Iteration 5: reconciliation plane — LEVEL (Cohen's d) x RANK (Cohen's q) per
 # ADOS<->informant pair. Orthogonal axes prove the two "agreements" are different
 # quantities that co-occur; upper-right = literature-consistent gap AND new finding.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 suppressPackageStartupMessages(library(ggrepel))
 

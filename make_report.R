@@ -1,6 +1,7 @@
 ## Polished results report (v0.9) in the v0.8 editorial style, generated from the
 ## CORRECTED pipeline outputs. For discussion with Einat after Emilio's review.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 options(stringsAsFactors = FALSE)
 suppressPackageStartupMessages(library(dplyr))
 esc <- function(x){ x<-as.character(x); x<-gsub("&","&amp;",x,fixed=TRUE)

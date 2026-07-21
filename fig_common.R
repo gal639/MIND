@@ -95,4 +95,42 @@ fc_save <- function(plot, stem, w=12, h=8, dpi=150) {
            error=function(e){ try(grDevices::dev.off(),silent=TRUE); message("pdf skipped ",stem,": ",conditionMessage(e)) })
   message("saved ", stem, ".png/.pdf")
 }
+## ---- sex-balanced resampling for figures ------------------------------------
+## Mirror of the Stage-5 engine (resample_balance.R) for the figure layer: hold
+## ALL girls fixed; within each stratum (cohort x age) draw n_girls boys without
+## replacement to match; combine. Stratified so the balanced sample respects the
+## cohort/age composition (same granularity as the within-subsample resampling).
+## Returns a list of n_reps integer vectors = row indices into `df` of the
+## balanced sample (all girls + the drawn boys), reproducible from `seed`.
+fc_balanced_draws <- function(df, n_reps = 20L, seed = 1L, sex_col = "sex",
+                              female = "Female",
+                              strata = c("sample_source", "age_group")) {
+  gi   <- which(df[[sex_col]] == female)
+  bi0  <- which(df[[sex_col]] != female & !is.na(df[[sex_col]]))
+  key  <- if (all(strata %in% names(df))) as.character(interaction(df[strata], drop = TRUE))
+          else rep("all", nrow(df))
+  bo_by <- split(bi0, key[bi0])                 # boy row-indices per stratum
+  ng_by <- vapply(split(gi, key[gi]), length, integer(1))  # n girls per stratum
+  withr::with_seed(seed, lapply(seq_len(n_reps), function(b) {
+    bi <- unlist(lapply(names(bo_by), function(k) {
+      pool <- bo_by[[k]]; ng <- if (k %in% names(ng_by)) ng_by[[k]] else 0L
+      if (ng <= 0L)              integer(0)
+      else if (length(pool) <= ng) pool
+      else                         sample(pool, ng, replace = FALSE)
+    }), use.names = FALSE)
+    sort(c(gi, bi))
+  }))
+}
+
+## Medoid row of a draws-by-statistic matrix: the draw whose statistic vector is
+## closest (L2) to the column-wise median across draws. Used to pick the single
+## most-representative balanced draw for a figure's point cloud (its stats match
+## the median lines by construction), so the cloud is not an arbitrary draw.
+fc_medoid <- function(M) {
+  M   <- as.matrix(M)
+  med <- apply(M, 2, stats::median, na.rm = TRUE)
+  d   <- apply(M, 1, function(r) sqrt(sum((r - med)^2, na.rm = TRUE)))
+  which.min(d)
+}
+
 cat("fig_common.R loaded:", length(fc_slices()), "slices,", nrow(imeta), "measures\n")

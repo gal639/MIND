@@ -8,7 +8,8 @@
 #   weak-moderate "literature" band and Cohen's q (girls higher = the new lens).
 # Slice = Full (all children combined) for the headline.
 # =============================================================================
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 suppressPackageStartupMessages({ library(dplyr); library(tidyr); library(ggplot2); library(patchwork); library(purrr); library(tibble) })
 source("resample_balance.R"); source("resample_lenses.R")
 

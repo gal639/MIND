@@ -8,7 +8,8 @@
 #   B. SPREAD — SD ratio girls/boys per subscale (where are girls more variable?)
 # Plus a descriptives table (n, raw mean, raw SD, SD ratio).
 # =============================================================================
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 suppressPackageStartupMessages({ library(dplyr); library(tidyr); library(ggplot2); library(patchwork); library(purrr); library(tibble); library(gridExtra); library(grid) })
 source("resample_balance.R"); source("resample_lenses.R")
 

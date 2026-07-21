@@ -1,6 +1,7 @@
 # Iteration 8: Cohen's d (girls-boys) + 95% CI by informant across the FOUR
 # age x cohort subsamples — robustness of the sex pattern to age and cohort.
-setwd("C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+if (!exists("BASE_DIR")) BASE_DIR <- Sys.getenv("MIND_BASE_DIR", unset = "C:/Users/galor/OneDrive/Documents/Desktop/MIND")
+setwd(BASE_DIR)
 source("fig_common.R")
 
 sm <- readRDS("SEM_output/sex_means.rds")$resampled
